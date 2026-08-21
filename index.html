@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Firebase Compat SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- Firebase modular SDK is loaded by the bootstrap module near the end of <body>.
+       The compat SDK was removed: it can only reach the (default) Firestore database,
+       but this project stores data in a NAMED database. -->
 
   <style>
     :root {
@@ -651,6 +651,7 @@
       <div class="brand" onclick="handleBrandClick()">
         <div class="brand-icon">M</div>
         <span>Medical Tracker BD</span>
+        <span id="sync-badge" style="font-size:11px;font-weight:600;color:#94a3b8;margin-left:6px;white-space:nowrap;">…</span>
       </div>
 
       <!-- Student Navigation -->
@@ -1371,6 +1372,83 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- =========================================================================
+       FIREBASE BOOTSTRAP (module scope, isolated from the main app script)
+       Exposes window.MTDB + window.MTDBReady. The main application script stays a
+       CLASSIC script so that inline onclick="..." handlers keep resolving globals.
+       ========================================================================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+      query, where, limit
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
+      authDomain: "linen-math-v6shk.firebaseapp.com",
+      projectId: "linen-math-v6shk",
+      storageBucket: "linen-math-v6shk.firebasestorage.app",
+      messagingSenderId: "495265888515",
+      appId: "1:495265888515:web:eb3051b5dccdde9962d136"
+    };
+    const FIRESTORE_DB_ID = "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1";
+
+    window.MTDB = null;
+    window.MTDBError = null;
+
+    window.MTDBReady = (async () => {
+      try {
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app, FIRESTORE_DB_ID);
+
+        // Connectivity probe. initializeApp() never throws on a bad network or bad
+        // rules, so an actual read is the only honest test that cloud sync is live.
+        await getDocs(query(collection(db, 'students'), limit(1)));
+
+        window.MTDB = {
+          getByEmail: async (email) => {
+            const s = await getDocs(query(collection(db, 'students'), where('email', '==', email), limit(1)));
+            return s.empty ? null : s.docs[0].data();
+          },
+          get:    async (uid)     => { const d = await getDoc(doc(db, 'students', uid)); return d.exists() ? d.data() : null; },
+          save:   async (student) => { await setDoc(doc(db, 'students', student.id), student, { merge: true }); },
+          list:   async ()        => (await getDocs(collection(db, 'students'))).docs.map(d => d.data()),
+          remove: async (uid)     => { await deleteDoc(doc(db, 'students', uid)); }
+        };
+        console.log('%c[MTDB] ✅ Firestore connected → ' + FIRESTORE_DB_ID, 'color:#34d399;font-weight:bold');
+        return true;
+      } catch (err) {
+        window.MTDB = null;
+        window.MTDBError = err;
+
+        // Translate the raw error into the actual root cause, so "offline mode" is
+        // never a dead end.
+        const code = err && err.code ? String(err.code) : '';
+        const msg  = err && err.message ? err.message : String(err);
+        let cause;
+        if (code.includes('permission-denied')) {
+          cause = 'PERMISSION DENIED → firestore.rules is blocking reads of /students. '
+                + 'Deploy rules that allow this collection.';
+        } else if (code.includes('not-found') || msg.includes('does not exist')) {
+          cause = 'DATABASE NOT FOUND → the named database "' + FIRESTORE_DB_ID + '" does not exist '
+                + 'in project ' + firebaseConfig.projectId + '. Check the id in firebase-applet-config.json.';
+        } else if (code.includes('unavailable') || code.includes('failed-precondition')) {
+          cause = 'UNAVAILABLE → no network, or Firestore is not enabled on this project yet.';
+        } else if (msg.includes('api-key') || code.includes('invalid-argument')) {
+          cause = 'BAD CONFIG → API key or project id rejected by Firebase.';
+        } else {
+          cause = 'UNCLASSIFIED → read the raw error below.';
+        }
+        console.warn('%c[MTDB] ⚠️ Firestore unavailable — running on localStorage', 'color:#fbbf24;font-weight:bold');
+        console.warn('[MTDB] Likely cause: ' + cause);
+        console.warn('[MTDB] code =', code || '(none)', '| message =', msg);
+        console.warn('[MTDB] Raw error object:', err);
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- =========================================================================
        APPLICATION SCRIPT
        ========================================================================= -->
   <script>
@@ -1476,45 +1554,20 @@
     /* =========================================================================
        2. FIREBASE & CLOUD SYNC LAYER & STATE PERSISTENCE
        ========================================================================= */
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDUMMY_REPLACE_ME",
-      authDomain: "<project>.firebaseapp.com",
-      projectId: "<project>",
-      storageBucket: "<project>.appspot.com",
-      messagingSenderId: "000000000000",
-      appId: "1:000000000000:web:xxxxxxxxxxxx"
-    };
-
-    let firestoreDb = null;
+    // Firebase now lives in the bootstrap module above; it hands the database over
+    // as window.MTDB (null when cloud sync is unavailable). isFirestoreActive is
+    // resolved once during initApp() and is used only for UI reporting.
     let isFirestoreActive = false;
-
-    function initFirebase() {
-      if (typeof firebase !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.includes('DUMMY')) {
-        try {
-          if (!firebase.apps || !firebase.apps.length) {
-            firebase.initializeApp(FIREBASE_CONFIG);
-          }
-          firestoreDb = firebase.firestore();
-          isFirestoreActive = true;
-        } catch (err) {
-          console.warn('Firebase init fallback to localStorage:', err);
-          isFirestoreActive = false;
-        }
-      } else {
-        isFirestoreActive = false;
-      }
-    }
 
     // Wrap all student data reads/writes in an async db_ layer
     async function db_getStudentByEmail(email) {
       if (!email) return null;
       const cleanEmail = email.trim().toLowerCase();
 
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          const snapshot = await firestoreDb.collection('students').where('email', '==', cleanEmail).limit(1).get();
-          if (!snapshot.empty) {
-            const data = snapshot.docs[0].data();
+          const data = await window.MTDB.getByEmail(cleanEmail);
+          if (data) {
             const idx = state.profiles.findIndex(p => p.id === data.id);
             if (idx >= 0) state.profiles[idx] = data;
             else state.profiles.push(data);
@@ -1530,11 +1583,10 @@
 
     async function db_getStudent(uid) {
       if (!uid) return null;
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          const docSnap = await firestoreDb.collection('students').doc(uid).get();
-          if (docSnap.exists) {
-            const data = docSnap.data();
+          const data = await window.MTDB.get(uid);
+          if (data) {
             const idx = state.profiles.findIndex(p => p.id === data.id);
             if (idx >= 0) state.profiles[idx] = data;
             else state.profiles.push(data);
@@ -1567,9 +1619,9 @@
         localStorage.setItem('medtrack_students', JSON.stringify(list));
       } catch (e) {}
 
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          await firestoreDb.collection('students').doc(student.id).set(student, { merge: true });
+          await window.MTDB.save(student);
         } catch (err) {
           console.warn('Firestore write error in db_saveStudent:', err);
         }
@@ -1577,13 +1629,9 @@
     }
 
     async function db_listStudents() {
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          const snapshot = await firestoreDb.collection('students').get();
-          const list = [];
-          snapshot.forEach(doc => {
-            list.push(doc.data());
-          });
+          const list = await window.MTDB.list();
           list.forEach(st => {
             const idx = state.profiles.findIndex(p => p.id === st.id);
             if (idx >= 0) state.profiles[idx] = st;
@@ -1609,9 +1657,9 @@
         localStorage.setItem('medtrack_students', JSON.stringify(list));
       } catch (e) {}
 
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          await firestoreDb.collection('students').doc(uid).delete();
+          await window.MTDB.remove(uid);
         } catch (err) {
           console.warn('Firestore delete error in db_deleteStudent:', err);
         }
@@ -1701,7 +1749,6 @@
         admin.email = 'rayanbinakter@gmail.com';
         admin.password = '17514';
       }
-      initFirebase();
     }
 
     function saveState() {
@@ -3824,17 +3871,51 @@
       }
     }
 
-    function initApp() {
+    let __appBooted = false;
+
+    async function initApp() {
+      if (__appBooted) return;   // guard: previously this could run twice
+      __appBooted = true;
+
+      // Render immediately so the UI never waits on the network.
       loadState();
       showLogin();
       wireLoginEvents();
+
+      // Then resolve cloud status and report it honestly.
+      try {
+        isFirestoreActive = await window.MTDBReady;
+      } catch (e) {
+        isFirestoreActive = false;
+      }
+      updateSyncBadge();
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      initApp();
-    });
+    function updateSyncBadge() {
+      const badge = document.getElementById('sync-badge');
+      if (!badge) return;
+      if (isFirestoreActive) {
+        badge.textContent = '☁ ক্লাউড সিঙ্ক চালু';
+        badge.style.color = '#34d399';
+        badge.title = 'Cloud sync active — data is shared across devices';
+        badge.onclick = null;
+        badge.style.cursor = 'default';
+      } else {
+        badge.textContent = '📴 অফলাইন মোড';
+        badge.style.color = '#fbbf24';
+        badge.style.cursor = 'pointer';
+        badge.title = 'Offline — click for the reason';
+        badge.onclick = () => {
+          const err = window.MTDBError;
+          showToast(err && err.code ? ('অফলাইন: ' + err.code) : 'অফলাইন মোড — কনসোল দেখুন');
+          if (err) console.warn('[MTDB] Offline reason:', err);
+        };
+      }
+    }
 
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initApp);
+    } else {
       initApp();
     }
   </script>
