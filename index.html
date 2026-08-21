@@ -1383,20 +1383,52 @@
       query, where, limit
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    const firebaseConfig = {
+    // Firebase was provisioned by AI Studio, which OWNS firebase-applet-config.json
+    // and may rotate or re-provision it. So we read that file at runtime instead of
+    // duplicating its values here — otherwise the app breaks silently the day AI
+    // Studio changes them. The literals below are only a last-resort fallback.
+    const FALLBACK_CONFIG = {
       apiKey: "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
       authDomain: "linen-math-v6shk.firebaseapp.com",
       projectId: "linen-math-v6shk",
       storageBucket: "linen-math-v6shk.firebasestorage.app",
       messagingSenderId: "495265888515",
-      appId: "1:495265888515:web:eb3051b5dccdde9962d136"
+      appId: "1:495265888515:web:eb3051b5dccdde9962d136",
+      firestoreDatabaseId: "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1"
     };
-    const FIRESTORE_DB_ID = "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1";
+
+    async function loadAppletConfig() {
+      try {
+        const res = await fetch('./firebase-applet-config.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const cfg = await res.json();
+        if (!cfg.apiKey || !cfg.projectId) throw new Error('config missing apiKey/projectId');
+        console.log('[MTDB] Using AI Studio config → project ' + cfg.projectId);
+        return { cfg, source: 'firebase-applet-config.json' };
+      } catch (e) {
+        console.warn('[MTDB] Could not read firebase-applet-config.json (' + e.message + '), using built-in fallback');
+        return { cfg: FALLBACK_CONFIG, source: 'built-in fallback' };
+      }
+    }
 
     window.MTDB = null;
     window.MTDBError = null;
+    window.MTDBInfo = null;
 
     window.MTDBReady = (async () => {
+      const { cfg, source } = await loadAppletConfig();
+      const FIRESTORE_DB_ID = cfg.firestoreDatabaseId || '(default)';
+      window.MTDBInfo = { projectId: cfg.projectId, databaseId: FIRESTORE_DB_ID, source };
+
+      const firebaseConfig = {
+        apiKey: cfg.apiKey,
+        authDomain: cfg.authDomain,
+        projectId: cfg.projectId,
+        storageBucket: cfg.storageBucket,
+        messagingSenderId: cfg.messagingSenderId,
+        appId: cfg.appId
+      };
+
       try {
         const app = initializeApp(firebaseConfig);
         const db  = getFirestore(app, FIRESTORE_DB_ID);
@@ -1415,7 +1447,7 @@
           list:   async ()        => (await getDocs(collection(db, 'students'))).docs.map(d => d.data()),
           remove: async (uid)     => { await deleteDoc(doc(db, 'students', uid)); }
         };
-        console.log('%c[MTDB] ✅ Firestore connected → ' + FIRESTORE_DB_ID, 'color:#34d399;font-weight:bold');
+        console.log('%c[MTDB] ✅ Firestore connected → ' + FIRESTORE_DB_ID + '  (config from ' + source + ')', 'color:#34d399;font-weight:bold');
         return true;
       } catch (err) {
         window.MTDB = null;
@@ -1430,8 +1462,9 @@
           cause = 'PERMISSION DENIED → firestore.rules is blocking reads of /students. '
                 + 'Deploy rules that allow this collection.';
         } else if (code.includes('not-found') || msg.includes('does not exist')) {
-          cause = 'DATABASE NOT FOUND → the named database "' + FIRESTORE_DB_ID + '" does not exist '
-                + 'in project ' + firebaseConfig.projectId + '. Check the id in firebase-applet-config.json.';
+          cause = 'DATABASE NOT FOUND → the database "' + FIRESTORE_DB_ID + '" does not exist '
+                + 'in project ' + cfg.projectId + '. The id came from ' + source + '. '
+                + 'If AI Studio re-provisioned Firebase, firebase-applet-config.json is stale.';
         } else if (code.includes('unavailable') || code.includes('failed-precondition')) {
           cause = 'UNAVAILABLE → no network, or Firestore is not enabled on this project yet.';
         } else if (msg.includes('api-key') || code.includes('invalid-argument')) {
