@@ -1,27 +1,44 @@
 rules_version = '2';
 
-// ⚠️ DEVELOPMENT RULES — fully open. Anyone with the public web API key can read,
-// modify, or delete every student record. This is acceptable ONLY while testing.
-// Locking this down is the next planned task (see NEXT-STEPS.md, step 3), and must
-// happen before real students use the app.
+// =============================================================================
+// ⚠️  TEMPORARY DEVELOPMENT RULES — THESE EXPIRE ON 2026-10-05
+// =============================================================================
+// This app has no Firebase Auth yet: students log in with an email + 4-digit PIN
+// stored inside their own document, so `request.auth` is always null. Any rule
+// requiring authentication would lock out every user.
+//
+// These rules therefore allow unauthenticated access, which means ANYONE who
+// opens the app can read every student's data. That is acceptable for testing
+// with 3 students. It is NOT acceptable for real use.
+//
+// The `request.time` guard below makes the app fail closed on 2026-10-05 instead
+// of silently staying wide open forever. When it expires, the app returns to
+// offline mode and the sync badge turns amber — that is the reminder to migrate
+// to Firebase Auth, not a bug.
+// =============================================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Student profiles, marks, routines and completions.
-    // `read` covers both get() and list() — the connectivity probe issues a
-    // limit(1) list query against this collection, so `list` must be allowed.
+    // Student profiles, marks, routines, completions.
+    // `read` must cover BOTH get and list: the connectivity probe runs
+    //   getDocs(query(collection(db,'students'), limit(1)))
+    // which is a list operation. A get-only rule would keep the app offline.
     match /students/{uid} {
-      allow read, write: if true;
+      allow read, write: if request.time < timestamp.date(2026, 10, 5);
     }
 
     // Routine broadcasts written by admin.html:
     //   setDoc(doc(db, 'routines', <YYYY-MM-DD>))
     //   setDoc(doc(db, 'routines', 'current'))
-    // This collection previously had NO rule at all, which means Firestore was
-    // denying every broadcast by default — the teacher portal was failing silently.
+    // This collection had no rule at all before, so every broadcast was denied.
     match /routines/{docId} {
-      allow read, write: if true;
+      allow read, write: if request.time < timestamp.date(2026, 10, 5);
+    }
+
+    // Everything else stays denied.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
