@@ -1,0 +1,3842 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medical Tracker BD - মাল্টি-ইউজার মেডিকেল প্রস্তুতি ট্র্যাকার</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card: #11131d;
+      --card-elevated: #161a29;
+      --card-hover: #1b2033;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-muted: rgba(129, 140, 248, 0.12);
+      --accent-border: rgba(129, 140, 248, 0.3);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Hind Siliguri', sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Container */
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 80px 16px;
+    }
+
+    /* Top Nav (shown after login) */
+    .top-nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent-muted);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .nav-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-btn:hover { color: var(--text); background: var(--card-hover); }
+    .nav-btn.active { color: var(--accent); background: var(--accent-muted); font-weight: 600; }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-pill {
+      background: var(--card-elevated);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+    .stat-pill strong { color: var(--text); font-weight: 600; }
+
+    /* Avatar & Dropdown */
+    .avatar-wrapper {
+      position: relative;
+    }
+    .avatar-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-muted);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      width: 180px;
+      background: var(--card-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 50;
+    }
+    .dropdown-menu.show { display: flex; }
+    .dropdown-item {
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      text-align: left;
+      font-size: 13px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dropdown-item:hover { background: var(--card-hover); color: var(--accent); }
+
+    /* UI Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--accent); color: #090a0f; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--card-elevated); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--card-hover); border-color: var(--accent-border); }
+    .btn-danger { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .btn-danger:hover { background: rgba(244, 63, 94, 0.25); }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-block { width: 100%; }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--card-elevated);
+      color: var(--text);
+      border: 1px solid var(--accent);
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: fadeInToast 0.25s ease-out;
+      pointer-events: auto;
+    }
+    @keyframes fadeInToast {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-muted);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+
+    /* Login Screen Specifics */
+    .login-container {
+      max-width: 520px;
+      margin: 40px auto;
+      width: 100%;
+    }
+    .profile-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .profile-item {
+      background: var(--card-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .profile-item:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-border);
+      transform: translateY(-1px);
+    }
+    .profile-left { display: flex; align-items: center; gap: 12px; }
+    .profile-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--accent-muted);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .profile-info h4 { font-size: 15px; font-weight: 600; color: var(--text); }
+    .profile-info p { font-size: 12px; color: var(--text-muted); }
+    .profile-rank {
+      text-align: right;
+    }
+    .profile-rank .badge {
+      background: var(--accent-muted);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Rank Orb & Score Section */
+    .rank-section {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+    @media (max-width: 640px) {
+      .rank-section { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+    }
+    .rank-orb-container {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: conic-gradient(var(--accent) var(--orb-deg, 0deg), var(--card-elevated) var(--orb-deg, 0deg));
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .rank-orb-inner {
+      width: 100%;
+      height: 100%;
+      background: var(--card);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .rank-orb-num { font-size: 28px; font-weight: 700; color: var(--text); }
+    .rank-orb-label { font-size: 11px; color: var(--text-muted); }
+
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .breakdown-table tr { border-bottom: 1px solid var(--border-subtle); }
+    .breakdown-table td { padding: 8px 4px; }
+    .breakdown-table td:last-child { text-align: right; font-weight: 600; }
+    .breakdown-total { font-size: 15px; font-weight: 700; color: var(--accent); }
+
+    /* Stat 4-card grid */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .stat-box-title { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-box-value { font-size: 20px; font-weight: 700; color: var(--text); }
+
+    /* Subject / Paper Grid */
+    .subject-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 800px) {
+      .subject-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .subject-grid { grid-template-columns: 1fr; }
+    }
+    .subject-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .subject-card:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-border);
+    }
+    .subject-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .subject-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 4px;
+      background: var(--bg);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Chapter List */
+    .chapter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chapter-item {
+      background: var(--card-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chapter-item:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-border);
+    }
+    .chapter-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+    .status-dot.green { background: #10b981; }
+    .status-dot.indigo { background: #818cf8; }
+    .status-dot.amber { background: #f59e0b; }
+    .status-dot.rose { background: #f43f5e; }
+
+    /* Routine Blocks */
+    .routine-block {
+      background: var(--card-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .routine-block.done {
+      opacity: 0.6;
+      border-color: var(--border-subtle);
+    }
+    .routine-time {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-muted);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .routine-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .routine-subject { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .routine-note { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+    .checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    /* Admin Mini 6-Cards */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+      .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .admin-stats-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Heatmap */
+    .heatmap-row {
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .heat-cell {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      background: var(--card-elevated);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+    }
+    .heat-cell.l1 { background: rgba(129, 140, 248, 0.25); border-color: rgba(129, 140, 248, 0.4); }
+    .heat-cell.l2 { background: rgba(129, 140, 248, 0.5); border-color: rgba(129, 140, 248, 0.6); }
+    .heat-cell.l3 { background: rgba(129, 140, 248, 0.75); border-color: var(--accent); }
+    .heat-cell.l4 { background: #818cf8; border-color: #a5b4fc; }
+
+    /* Empty state */
+    .empty-state {
+      padding: 36px 16px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      margin: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--border);
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #ffffff;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    .switch input:checked + .slider {
+      background-color: var(--accent);
+    }
+    .switch input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Thinking stats responsive */
+    @media (max-width: 900px) {
+      #thinking-stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    /* Utility */
+    .hidden { display: none !important; }
+    .text-accent { color: var(--accent); }
+    .text-green { color: #10b981; }
+    .text-rose { color: #f43f5e; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation (hidden on login screen) -->
+  <nav class="top-nav hidden" id="top-nav">
+    <div class="nav-inner">
+      <div class="brand" onclick="handleBrandClick()">
+        <div class="brand-icon">M</div>
+        <span>Medical Tracker BD</span>
+      </div>
+
+      <!-- Student Navigation -->
+      <div class="nav-center" id="student-nav-center">
+        <button class="nav-btn active" id="nav-home" onclick="navigate('home')">হোম</button>
+        <button class="nav-btn" id="nav-subjects" onclick="navigate('subjects')">বিষয়সমূহ</button>
+        <button class="nav-btn" id="nav-routine" onclick="navigate('routine')">রুটিন</button>
+      </div>
+
+      <!-- Admin Navigation -->
+      <div class="nav-center hidden" id="admin-nav-center">
+        <button class="nav-btn active" id="nav-admin-dashboard" onclick="navigate('admin-home')">ড্যাশবোর্ড</button>
+        <button class="nav-btn" id="nav-admin-routine" onclick="navigate('admin-routine')">রুটিন বিল্ডার</button>
+      </div>
+
+      <div class="nav-right">
+        <!-- Student Stats Pill -->
+        <div class="stat-pill" id="student-stat-pill">
+          <span>🔥 <strong id="nav-streak">০ দিন</strong></span>
+          <span style="opacity: 0.3;">|</span>
+          <span>র‍্যাঙ্ক: <strong id="nav-rank">#—</strong></span>
+        </div>
+
+        <!-- Avatar & Dropdown -->
+        <div class="avatar-wrapper">
+          <button class="avatar-btn" id="user-avatar" onclick="toggleDropdown()">রা</button>
+          <div class="dropdown-menu" id="user-dropdown">
+            <div id="student-dropdown-items">
+              <button class="dropdown-item" onclick="navigate('settings')">⚙️ সেটিংস</button>
+            </div>
+            <button class="dropdown-item text-rose" onclick="logout()">🚪 লগআউট</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- =========================================================================
+         VIEW 0: LOGIN VIEW
+         ========================================================================= -->
+    <section id="view-login" class="login-container">
+      <div class="card" style="margin-bottom: 20px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div class="brand-icon" style="margin: 0 auto 12px auto; width: 44px; height: 44px; font-size: 20px;">M</div>
+          <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">মেডিকেল ভর্তি পরীক্ষা প্রস্তুতি ট্র্যাকার</h2>
+          <p style="color: var(--text-muted); font-size: 13px;">শিক্ষার্থী লগইন</p>
+        </div>
+
+        <form id="student-login-form" onsubmit="event.preventDefault(); attemptLogin();">
+          <div class="form-group">
+            <label class="form-label" for="li-email">ইমেইল</label>
+            <input 
+              type="email" 
+              id="li-email" 
+              class="form-input" 
+              placeholder="আপনার ইমেইল দিন" 
+              oninput="handleLoginEmailInput(event)" 
+              required 
+              autocomplete="email" 
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="li-pin">৪-সংখ্যার PIN</label>
+            <input 
+              type="password" 
+              id="li-pin" 
+              class="form-input" 
+              maxlength="4" 
+              inputmode="numeric" 
+              pattern="[0-9]*" 
+              placeholder="••••" 
+              required 
+              autocomplete="current-password" 
+              style="font-size: 24px; letter-spacing: 8px; text-align: center; padding: 8px 14px;" 
+            />
+          </div>
+
+          <button type="button" id="btnLogin" class="btn btn-primary btn-block" style="padding: 12px; font-size: 15px; font-weight: 600;">
+            প্রবেশ করো
+          </button>
+
+          <!-- Inline error / signup prompt -->
+          <div id="li-error" style="color: #f87171; margin-top: 14px; font-size: 13px; text-align: center; min-height: 20px;"></div>
+        </form>
+
+        <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="openSignUpModal()">+ নতুন শিক্ষার্থী যোগ করো</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="openAdminLoginModal()" style="color: var(--text-muted);">🛡️ অ্যাডমিন লগইন</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 1: STUDENT HOME
+         ========================================================================= -->
+    <section id="view-home" class="hidden">
+      <!-- Category Badge Card -->
+      <div class="card" id="home-category-card" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div id="home-score-header" style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px;">তোমার গড়: — / ১০০</div>
+            <div id="home-category-badge" style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; padding: 6px 14px; border-radius: 8px; background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3);">
+              ক্যাটাগরি: ⚠️ Red Zone (রেড জোন)
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div id="home-cat-rank-pill" style="font-size: 13px; color: var(--accent); font-weight: 600;">
+              📍 #— / ১০০
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 200 Mark Context Card -->
+      <div class="card">
+        <div class="rank-section">
+          <div class="rank-orb-container" id="home-rank-orb">
+            <div class="rank-orb-inner">
+              <span class="rank-orb-label">সম্ভাব্য র‍্যাঙ্ক</span>
+              <span class="rank-orb-num" id="home-rank-num">#—</span>
+              <span class="rank-orb-label">/১০০ জনের মধ্যে</span>
+            </div>
+          </div>
+
+          <div>
+            <table class="breakdown-table">
+              <tr>
+                <td>SSC GPA (× ৮)</td>
+                <td id="row-ssc">—</td>
+              </tr>
+              <tr>
+                <td>HSC GPA (× ১২)</td>
+                <td id="row-hsc">—</td>
+              </tr>
+              <tr>
+                <td>বেস GPA স্কোর (১০০)</td>
+                <td id="row-base-gpa">—</td>
+              </tr>
+              <tr id="row-penalty-tr" class="hidden">
+                <td class="text-rose">২য় বার পরীক্ষার্থী পেনাল্টি</td>
+                <td class="text-rose" id="row-penalty">-৩.০০</td>
+              </tr>
+              <tr>
+                <td>লিখিত পরীক্ষা গড় (১০০)</td>
+                <td id="row-written">—</td>
+              </tr>
+              <tr style="border-bottom: none;">
+                <td class="breakdown-total">সর্বমোট স্কোর (২০০)</td>
+                <td class="breakdown-total" id="row-total">—</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Stat Cards -->
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-box-title">বায়োলজি গড়</div>
+          <div class="stat-box-value" id="stat-bio">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">রসায়ন গড়</div>
+          <div class="stat-box-value" id="stat-chem">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">পদার্থ গড়</div>
+          <div class="stat-box-value" id="stat-phy">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">সর্বমোট অনুশীলন</div>
+          <div class="stat-box-value" id="stat-overall">—</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <!-- Weak Chapters -->
+        <div class="card">
+          <div class="card-title">⚠️ দুর্বল অধ্যায়সমূহ</div>
+          <div id="home-weak-list">
+            <div class="empty-state">কোনো দুর্বল অধ্যায় নেই</div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <div class="card-title">⏱️ সাম্প্রতিক অনুশীলন</div>
+          <div id="home-recent-list">
+            <div class="empty-state">কোনো অনুশীলনের রেকর্ড নেই</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Study Thinking Stats Section -->
+      <div class="card" id="home-thinking-card">
+        <div class="card-title" style="margin-bottom: 16px;">
+          <span>📊 তোমার অধ্যয়নের ধরন</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;" id="thinking-stats-grid">
+          <!-- Chart 1: Subject Time Distribution -->
+          <div style="background: var(--card-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column;">
+            <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text);">⏱️ বিষয়ভিত্তিক সময় বণ্টন</div>
+            <div style="height: 180px; position: relative;">
+              <canvas id="thinkingSubjectPieChart"></canvas>
+              <div id="thinking-pie-empty" class="empty-state hidden" style="padding: 50px 0;">ডেটা নেই</div>
+            </div>
+            <div id="thinking-subject-takeaway" style="font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 10px; border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+              <!-- Dynamic takeaway -->
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Progression Over Weeks -->
+          <div style="background: var(--card-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column;">
+            <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text);">📈 সপ্তাহভিত্তিক ক্যাটাগরি অগ্রগতি</div>
+            <div style="height: 220px; position: relative;">
+              <canvas id="thinkingProgressionLineChart"></canvas>
+              <div id="thinking-line-empty" class="empty-state hidden" style="padding: 50px 0;">ডেটা নেই</div>
+            </div>
+          </div>
+
+          <!-- Chart 3: Mistake-Type Distribution -->
+          <div style="background: var(--card-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column;">
+            <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text);">⚠️ ভুলের ধরন বিশ্লেষণ</div>
+            <div style="height: 220px; position: relative;">
+              <canvas id="thinkingMistakeBarChart"></canvas>
+              <div id="thinking-bar-empty" class="empty-state hidden" style="padding: 50px 0;">ট্যাগ করা ভুলের ডেটা নেই</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 2: SUBJECTS & PAPERS
+         ========================================================================= -->
+    <section id="view-subjects" class="hidden">
+      <div class="card-title" style="margin-bottom: 16px;">
+        <span style="font-size: 18px; font-weight: 700; color: var(--text);">বিষয়সমূহ নির্বাচন করুন</span>
+      </div>
+      <div class="subject-grid" id="subjects-grid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 3: PAPER CHAPTERS LIST
+         ========================================================================= -->
+    <section id="view-paper" class="hidden">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div>
+          <button class="btn btn-secondary btn-sm" onclick="navigate('subjects')">← বিষয় তালিকায় ফিরুন</button>
+          <h2 style="font-size: 20px; font-weight: 700; margin-top: 8px;" id="paper-view-title">পদার্থবিজ্ঞান ১ম পত্র</h2>
+        </div>
+      </div>
+      <div class="card">
+        <div class="chapter-list" id="paper-chapters-list">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 4: CHAPTER ENTRY MODAL / VIEW
+         ========================================================================= -->
+    <div class="modal-backdrop" id="chapter-entry-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <span style="font-size: 12px; color: var(--accent); font-weight: 600;" id="entry-paper-name">বায়োলজি</span>
+            <h3 class="modal-title" id="entry-chapter-title">কোষ ও এর গঠন</h3>
+          </div>
+          <button class="close-btn" onclick="closeChapterModal()">✕</button>
+        </div>
+
+        <form id="chapter-entry-form" onsubmit="handleSaveChapterMark(event)">
+          <div class="form-group">
+            <label class="form-label">তারিখ</label>
+            <input type="date" id="entry-date" class="form-input" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">মোট MCQ (Total MCQ)</label>
+              <input type="number" id="entry-total" class="form-input" min="1" value="25" oninput="calculateSkipped()" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">সঠিক (Correct)</label>
+              <input type="number" id="entry-correct" class="form-input" min="0" placeholder="০" oninput="calculateSkipped()" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">ভুল (Wrong)</label>
+              <input type="number" id="entry-wrong" class="form-input" min="0" placeholder="০" oninput="calculateSkipped()" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">স্কিপড (Skipped)</label>
+              <input type="number" id="entry-skipped" class="form-input" min="0" placeholder="০" readonly style="background: var(--bg); opacity: 0.85;" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">ভুলের ধরন (ঐচ্ছিক)</label>
+              <select id="entry-mistake-category" class="form-select">
+                <option value="">কোনোটিই নয়</option>
+                <option value="silly">Silly mistake (ছোটখাট ভুল)</option>
+                <option value="formula">Formula error (সূত্রের ভুল)</option>
+                <option value="concept">Concept gap (ধারণাগত দুর্বলতা)</option>
+                <option value="time">Time pressure (সময়ের অভাব)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">নোট (ঐচ্ছিক)</label>
+              <input type="text" id="entry-note" class="form-input" placeholder="যেমন: রিভিশন বাকি" />
+            </div>
+          </div>
+
+          <div id="entry-error" style="color: #f87171; font-size: 13px; margin-bottom: 12px; min-height: 18px; text-align: center; font-weight: 500;"></div>
+
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeChapterModal()">বাতিল</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2;">সেভ করো</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         VIEW 5: STUDENT ROUTINE
+         ========================================================================= -->
+    <section id="view-routine" class="hidden">
+      <div class="card">
+        <div class="card-title">
+          <span>আজকের স্টাডি রুটিন</span>
+          <span id="routine-progress-text" style="font-size: 13px; color: var(--accent);">০ / ০ সম্পন্ন</span>
+        </div>
+        <div id="student-routine-list">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 6: STUDENT SETTINGS
+         ========================================================================= -->
+    <section id="view-settings" class="hidden">
+      <div class="card" style="max-width: 600px; margin: 0 auto 20px auto;">
+        <div class="card-title">প্রোফাইল সেটিংস</div>
+        <form onsubmit="handleUpdateProfile(event)">
+          <div class="form-group">
+            <label class="form-label">শিক্ষার্থীর নাম</label>
+            <input type="text" id="set-name" class="form-input" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">SSC GPA</label>
+              <input type="number" id="set-ssc" class="form-input" step="0.01" min="0" max="5" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">HSC GPA</label>
+              <input type="number" id="set-hsc" class="form-input" step="0.01" min="0" max="5" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">পরীক্ষার্থী ধরন</label>
+            <select id="set-timer" class="form-select">
+              <option value="false">১ম বার পরীক্ষার্থী (কোনো পেনাল্টি নেই)</option>
+              <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">পিন কোড (ঐচ্ছিক ৪-সংখ্যার PIN)</label>
+            <input type="password" id="set-pin" maxlength="4" class="form-input" placeholder="খালি রাখলে পিন অপরিবর্তিত থাকবে" />
+          </div>
+
+          <!-- 200 Scale Toggle Row -->
+          <div class="form-group" style="background: var(--card-elevated); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
+            <div>
+              <label for="set-use-200-scale" style="font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; display: block; margin-bottom: 2px;">২০০ নম্বর স্কেল দেখাও</label>
+              <div style="font-size: 12px; color: var(--text-muted);">SSC/HSC GPA সহ ২০০ নম্বরের ভিত্তিতে মূল্যায়ন ও ক্যাটাগরি</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="set-use-200-scale" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">সংরক্ষণ করুন</button>
+
+          <!-- Milestones Vertical Timeline -->
+          <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 18px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <h4 style="font-size: 14px; font-weight: 700; color: var(--text);">🏆 ক্যাটাগরি অর্জনের মাইলফলক</h4>
+              <span style="font-size: 11px; color: var(--text-dim);">অগ্রগতি টাইমলাইন</span>
+            </div>
+            <div id="settings-milestones-list" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+            <button type="button" class="btn btn-secondary btn-block" style="color: #f87171;" onclick="logout()">🚪 লগআউট করুন</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 7: ADMIN DASHBOARD
+         ========================================================================= -->
+    <section id="view-admin-home" class="hidden">
+      <!-- 6 Mini Cards (ক্লাস সারাংশ) -->
+      <div class="admin-stats-grid">
+        <div class="stat-box">
+          <div class="stat-box-title">মোট শিক্ষার্থী</div>
+          <div class="stat-box-value" id="adm-total-students">০</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">এই সপ্তাহে সক্রিয়</div>
+          <div class="stat-box-value" id="adm-active-week">০</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">ক্লাস গড় র‍্যাঙ্ক</div>
+          <div class="stat-box-value" id="adm-avg-rank">#—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">আজকের মোট ব্লক</div>
+          <div class="stat-box-value" id="adm-today-blocks">০</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">গড় সম্পন্ন হার</div>
+          <div class="stat-box-value" id="adm-avg-completion">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">আজকের সম্পন্ন ব্লক</div>
+          <div class="stat-box-value" id="adm-today-completed">০</div>
+        </div>
+      </div>
+
+      <!-- Class Chart Card -->
+      <div class="card">
+        <div class="card-title">📊 বিষয়ভিত্তিক ক্লাস গড় স্কোর (১০০ এর স্কেলে)</div>
+        <div style="height: 260px; position: relative;" id="admin-chart-container">
+          <canvas id="classAvgChart"></canvas>
+          <div id="admin-chart-empty" class="empty-state hidden">কোনো শিক্ষার্থীর পরীক্ষার ডেটা পাওয়া যায়নি</div>
+        </div>
+      </div>
+
+      <!-- Student List Table -->
+      <div class="card">
+        <div class="card-title">শিক্ষার্থীদের তালিকা</div>
+        <div id="admin-student-list" class="profile-card-list">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Activity Heatmap (Last 15 Days) -->
+      <div class="card">
+        <div class="card-title">📅 গত ১৫ দিনের ক্লাস অ্যাক্টিভিটি হিটম্যাপ</div>
+        <div class="heatmap-row" id="admin-heatmap-row">
+          <!-- 15 cells rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 8: PER-STUDENT ANALYTICS (Admin Drill-down)
+         ========================================================================= -->
+    <section id="view-student-analytics" class="hidden">
+      <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+        <button class="btn btn-secondary btn-sm" onclick="navigate('admin-home')">← অ্যাডমিন ড্যাশবোর্ডে ফিরুন</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" onclick="sendRoutineToCurrentStudent()">এই শিক্ষার্থীকে রুটিন পাঠাও</button>
+          <button class="btn btn-secondary btn-sm" onclick="resetStudentData()">ডেটা রিসেট</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCurrentStudentProfile()">শিক্ষার্থী মুছুন</button>
+        </div>
+      </div>
+
+      <!-- Student Header Info Card -->
+      <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div class="profile-avatar" style="width: 52px; height: 52px; font-size: 20px;" id="drill-avatar">রা</div>
+          <div>
+            <h2 style="font-size: 18px; font-weight: 700;" id="drill-name">রায়ান বিন আখতার</h2>
+            <p style="font-size: 13px; color: var(--text-muted);" id="drill-email">student@tracker.app</p>
+            <p style="font-size: 12px; color: var(--text-dim); margin-top: 4px;" id="drill-meta">SSC: ৫.০০ | HSC: ৫.০০ | ১ম বার | স্ট্রিক: ০ দিন</p>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 12px; color: var(--text-muted);">সম্ভাব্য র‍্যাঙ্ক</div>
+          <div style="font-size: 28px; font-weight: 700; color: var(--accent);" id="drill-rank">#—</div>
+        </div>
+      </div>
+
+      <!-- 4 Drill-down Charts Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="card">
+          <div class="card-title">📈 র‍্যাঙ্ক প্রবণতা (১ নম্বর শীর্ষে)</div>
+          <div style="height: 220px; position: relative;">
+            <canvas id="drillRankChart"></canvas>
+            <div id="drill-rank-empty" class="empty-state hidden">ডেটা নেই</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📊 বিষয়ভিত্তিক গড় স্কোর (/১০০)</div>
+          <div style="height: 220px; position: relative;">
+            <canvas id="drillPaperChart"></canvas>
+            <div id="drill-paper-empty" class="empty-state hidden">ডেটা নেই</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎯 চ্যাপ্টার মাস্টারি (টপ ৮)</div>
+          <div style="height: 220px; position: relative;">
+            <canvas id="drillMasteryChart"></canvas>
+            <div id="drill-mastery-empty" class="empty-state hidden">ডেটা নেই</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📅 রুটিন সম্পন্ন হার (গত ৭ দিন)</div>
+          <div style="height: 220px; position: relative;">
+            <canvas id="drillRoutineChart"></canvas>
+            <div id="drill-routine-empty" class="empty-state hidden">ডেটা নেই</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Marks Table -->
+      <div class="card">
+        <div class="card-title">সাম্প্রতিক পরীক্ষার নম্বরসমূহ</div>
+        <div id="drill-recent-marks-list">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         VIEW 9: ADMIN ROUTINE BUILDER
+         ========================================================================= -->
+    <section id="view-admin-routine" class="hidden">
+      <div class="card">
+        <div class="card-title">রুটিন ব্লক তৈরি ও প্রকাশ</div>
+
+        <!-- Recipients Checklist -->
+        <div class="form-group">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <label class="form-label" style="margin: 0;">প্রাপক নির্বাচন করুন:</label>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllRecipients(true)">সব শিক্ষার্থী</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllRecipients(false)">কাউকে না</button>
+            </div>
+          </div>
+          <div id="routine-recipients-checklist" style="display: flex; flex-wrap: wrap; gap: 12px; background: var(--bg); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">শুরুর সময়</label>
+            <input type="text" id="rb-time-start" class="form-input" placeholder="09:00 AM" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">শেষের সময়</label>
+            <input type="text" id="rb-time-end" class="form-input" placeholder="11:00 AM" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">বিষয়</label>
+          <select id="rb-subject-select" class="form-select" onchange="renderRoutineChapterChecklist()">
+            <option value="bio1">বায়োলজি ১ম পত্র (উদ্ভিদবিজ্ঞান)</option>
+            <option value="bio2">বায়োলজি ২য় পত্র (প্রাণিবিজ্ঞান)</option>
+            <option value="chem1">রসায়ন ১ম পত্র</option>
+            <option value="chem2">রসায়ন ২য় পত্র</option>
+            <option value="phy1">পদার্থবিজ্ঞান ১ম পত্র</option>
+            <option value="phy2">পদার্থবিজ্ঞান ২য় পত্র</option>
+          </select>
+        </div>
+
+        <!-- Chapter multi-select checklist -->
+        <div class="form-group">
+          <label class="form-label">অধ্যায় নির্বাচন করুন:</label>
+          <div id="rb-chapter-checklist" style="max-height: 160px; overflow-y: auto; background: var(--bg); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px;">
+            <!-- Rendered via JS based on selected subject -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">শিরোনাম</label>
+          <input type="text" id="rb-title" class="form-input" placeholder="যেমন: অধ্যায় রিভিশন ও প্রশ্নব্যাংক সলভ" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">নোট (ঐচ্ছিক)</label>
+          <input type="text" id="rb-note" class="form-input" placeholder="যেমন: বিগত ৫ বছরের মেডিকেল প্রশ্ন সলভ করতে হবে" />
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-block" onclick="addPendingBlock()">+ ব্লক যোগ করো</button>
+      </div>
+
+      <!-- Pending Blocks & Publish -->
+      <div class="card">
+        <div class="card-title">
+          <span>প্রকাশের অপেক্ষায় থাকা ব্লকসমূহ</span>
+          <button type="button" class="btn btn-primary btn-sm" onclick="publishRoutineBlocks()">📤 প্রকাশ করো</button>
+        </div>
+        <div id="pending-blocks-list">
+          <div class="empty-state">কোনো পেন্ডিং ব্লক নেই। উপরের ফর্ম থেকে ব্লক যোগ করুন।</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       MODALS: SIGN-UP & ADMIN LOGIN
+       ========================================================================= -->
+
+  <!-- 1. Sign Up Modal -->
+  <div class="modal-backdrop" id="modal-signup">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">নতুন শিক্ষার্থী যোগ করুন</h3>
+        <button class="close-btn" onclick="closeModal('modal-signup')">✕</button>
+      </div>
+      <form onsubmit="handleCreateStudent(event)">
+        <div class="form-group">
+          <label class="form-label">নাম</label>
+          <input type="text" id="su-name" class="form-input" placeholder="পূর্ণ নাম লিখুন" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">ইমেইল</label>
+          <input type="email" id="su-email" class="form-input" placeholder="student@example.com" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">SSC GPA</label>
+            <input type="number" id="su-ssc" class="form-input" step="0.01" min="0" max="5" value="5.00" oninput="updateLiveGpaPreview()" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">HSC GPA</label>
+            <input type="number" id="su-hsc" class="form-input" step="0.01" min="0" max="5" value="5.00" oninput="updateLiveGpaPreview()" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">পরীক্ষার্থী ধরন</label>
+          <select id="su-timer" class="form-select" onchange="updateLiveGpaPreview()">
+            <option value="false">১ম বার পরীক্ষার্থী (কোনো পেনাল্টি নেই)</option>
+            <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">৪-সংখ্যার PIN (লগইনের জন্য)</label>
+          <input type="password" id="su-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" class="form-input" placeholder="৪-সংখ্যার পিন দিন" required />
+        </div>
+
+        <!-- Live GPA Preview -->
+        <div style="background: var(--card-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--accent-border); margin-bottom: 20px; font-size: 13px;">
+          <div style="color: var(--text-muted); margin-bottom: 4px;">লাইভ GPA স্কোর হিসাব (১০০ তে):</div>
+          <div id="su-gpa-formula" style="font-weight: 600; color: var(--accent);">৫.০০ × ৮ + ৫.০০ × ১২ = ১০০.০০ / ১০০</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">শুরু করো</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Admin Login Modal -->
+  <div class="modal-backdrop" id="modal-admin-login">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">🛡️ অ্যাডমিন লগইন</h3>
+        <button class="close-btn" onclick="closeModal('modal-admin-login')">✕</button>
+      </div>
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group">
+          <label class="form-label">অ্যাডমিন ইমেইল</label>
+          <input type="email" id="adm-login-email" class="form-input" value="rayanbinakter@gmail.com" placeholder="rayanbinakter@gmail.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">পাসওয়ার্ড</label>
+          <input type="password" id="adm-login-password" class="form-input" value="" placeholder="পাসওয়ার্ড লিখুন" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">লগইন করুন</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Result Card Modal -->
+  <div class="modal-backdrop" id="modal-result-card">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📊 Result Card</h3>
+        <button class="close-btn" onclick="closeResultCard()">✕</button>
+      </div>
+
+      <div id="result-card-body">
+        <!-- Injected via showResultCard -->
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button type="button" class="btn btn-primary btn-block" onclick="closeResultCard()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js (Loaded dynamically for admin view) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- =========================================================================
+       APPLICATION SCRIPT
+       ========================================================================= -->
+  <script>
+    /* =========================================================================
+       1. SHARED UTILITIES, CONSTANTS & SYLLABUS DATA
+       ========================================================================= */
+    function hashPin(pin) {
+      let h = 5381;
+      for (let i = 0; i < pin.length; i++) h = ((h << 5) + h + pin.charCodeAt(i)) | 0;
+      return 'h' + (h >>> 0).toString(16);
+    }
+
+    const SEED_STUDENTS = [
+      { id: 's_rayan', name: 'রায়ান', email: 'rayanbinakhter@gmail.com', pinHash: hashPin('1122') },
+      { id: 's_faria', name: 'ফারিয়া', email: 'farialaboni@gmail.com', pinHash: hashPin('2233') },
+      { id: 's_sneha', name: 'স্নেহা', email: 'sneha@gmail.com', pinHash: hashPin('3344') }
+    ];
+
+    function seedStudents() {
+      if (localStorage.getItem('medtrack_seeded_v2') === '1') {
+        console.log('Already seeded');
+        return;
+      }
+      const existing = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
+      if (existing.length > 0) {
+        localStorage.setItem('medtrack_seeded_v2', '1');
+        return;
+      }
+      const seeds = SEED_STUDENTS.map(s => ({
+        ...s, role: 'student',
+        ssc: 0, hsc: 0, isSecondTimer: false,
+        marks: [], routines: [], completions: [],
+        streak: 0, lastActive: null,
+        createdAt: new Date().toISOString().slice(0, 10)
+      }));
+      localStorage.setItem('medtrack_students', JSON.stringify(seeds));
+      localStorage.setItem('medtrack_seeded_v2', '1');
+      console.log('✓ Seeded 3 students:', seeds.map(s => s.email));
+    }
+
+    // Call seedStudents() ONCE at the very start of script
+    seedStudents();
+
+    const SYLLABUS = [
+      ['phy1','ভৌতজগৎ ও পরিমাপ'],['phy1','ভেক্টর'],['phy1','গতিবিদ্যা'],
+      ['phy1','নিউটোনীয় বলবিদ্যা'],['phy1','কাজ, শক্তি ও ক্ষমতা'],
+      ['phy1','মহাকর্ষ ও অভিকর্ষ'],['phy1','পদার্থের গাঠনিক ধর্ম'],
+      ['phy1','পর্যাবৃত্তিক গতি'],['phy1','তরঙ্গ'],
+      ['phy1','আদর্শ গ্যাস ৪ গ্যাসের গতিতত্ত্ব'],
+      ['phy2','তাপগতিবিদ্যা'],['phy2','স্থির তড়িৎ'],['phy2','চল তড়িৎ'],
+      ['phy2','তড়িৎ প্রবাহের চৌম্বক ক্রিয়া ও চুম্বকত্ব'],
+      ['phy2','তাড়িতচৌম্বকীয় আবেশ ও পরিবর্তী প্রবাহ'],
+      ['phy2','জ্যামিতিক আলোকবিজ্ঞান'],['phy2','ভৌত আলোকবিজ্ঞান'],
+      ['phy2','আধুনিক পদার্থবিজ্ঞানের সূচনা'],
+      ['phy2','পরমাণু মডেল এবং নিউক্লিয়ার পদার্থবিজ্ঞান'],
+      ['phy2','সেমিকন্ডাক্টর ও ইলেকট্রনিক্স'],['phy2','জ্যোতির্বিজ্ঞান'],
+      ['chem1','ল্যাবরেটরির নিরাপদ ব্যবহার'],['chem1','গুণগত রসায়ন'],
+      ['chem1','মৌলের পর্যাবৃত্ত ধর্ম ও রাসায়নিক বন্ধন'],
+      ['chem1','রাসায়নিক পরিবর্তন'],['chem1','কর্মমুখী রসায়ন'],
+      ['chem2','পরিবেশ রসায়ন'],['chem2','জৈব রসায়ন'],
+      ['chem2','পরিমাণগত রসায়ন'],['chem2','তড়িৎ রসায়ন'],
+      ['chem2','অর্থনৈতিক রসায়ন'],
+      ['bio1','কোষ ও এর গঠন'],['bio1','কোষ বিভাজন'],
+      ['bio1','কোষ রসায়ন'],['bio1','অণুজীব'],
+      ['bio1','শৈবাল ও ছত্রাক'],['bio1','ব্রায়োফাইটা ৪ টেরিডোফাইটা'],
+      ['bio1','নগ্নবীজী ৪ আবৃতবীজী উদ্ভিদ'],['bio1','টিস্যু ৪ টিস্যুতন্ত্র'],
+      ['bio1','উদ্ভিদ শারীরতত্ত্ব'],['bio1','উদ্ভিদ প্রজনন'],
+      ['bio1','জীবপ্রযুক্তি'],['bio1','জীবের পরিবেশ, বিস্তার ৪ সংরক্ষণ'],
+      ['bio2','প্রাণীর বিভিন্নতা ৪ শ্রেণিবিন্যাস'],['bio2','প্রাণীর পরিচিতি'],
+      ['bio2','মানব শারীরতত্ত্ব: পরিপাক ৪ শোষণ'],
+      ['bio2','মানব শারীরতত্ত্ব: রক্ত ৪ সংবহন'],
+      ['bio2','মানব শারীরতত্ত্ব: শ্বসন ৪ শ্বাসক্রিয়া'],
+      ['bio2','মানব শারীরতত্ত্ব: বর্জ্য ৪ নিষ্কাশন'],
+      ['bio2','মানব শারীরতত্ত্ব: চলন ৪ অঙ্গচালনা'],
+      ['bio2','মানব শারীরতত্ত্ব: সমন্বয় ৪ নিয়ন্ত্রণ'],
+      ['bio2','মানব জীবনের ধারাবাহিকতা'],['bio2','মানবদেহের প্রতিরক্ষা'],
+      ['bio2','জিনতত্ত্ব ৪ বিবর্তন'],['bio2','প্রাণীর আচরণ']
+    ];
+
+    const PAPERS = {
+      phy1: { name: 'পদার্থবিজ্ঞান ১ম পত্র', subject: 'phy' },
+      phy2: { name: 'পদার্থবিজ্ঞান ২য় পত্র', subject: 'phy' },
+      chem1: { name: 'রসায়ন ১ম পত্র', subject: 'chem' },
+      chem2: { name: 'রসায়ন ২য় পত্র', subject: 'chem' },
+      bio1: { name: 'বায়োলজি ১ম পত্র', subject: 'bio' },
+      bio2: { name: 'বায়োলজি ২য় পত্র', subject: 'bio' }
+    };
+
+    // Deterministic 100-student normal distribution N(110, 25) clamped [0, 200]
+    const DIST_SAMPLES = [];
+    (function initDistribution() {
+      for (let i = 0; i < 100; i++) {
+        // Deterministic Box-Muller using index seed
+        const u1 = (i + 1) / 101.0;
+        const u2 = ((i * 37) % 100 + 1) / 101.0;
+        const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+        const val = Math.max(0, Math.min(200, 110 + (25 * z)));
+        DIST_SAMPLES.push(val);
+      }
+      DIST_SAMPLES.sort((a, b) => a - b);
+    })();
+
+    /* =========================================================================
+       2. FIREBASE & CLOUD SYNC LAYER & STATE PERSISTENCE
+       ========================================================================= */
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDUMMY_REPLACE_ME",
+      authDomain: "<project>.firebaseapp.com",
+      projectId: "<project>",
+      storageBucket: "<project>.appspot.com",
+      messagingSenderId: "000000000000",
+      appId: "1:000000000000:web:xxxxxxxxxxxx"
+    };
+
+    let firestoreDb = null;
+    let isFirestoreActive = false;
+
+    function initFirebase() {
+      if (typeof firebase !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.includes('DUMMY')) {
+        try {
+          if (!firebase.apps || !firebase.apps.length) {
+            firebase.initializeApp(FIREBASE_CONFIG);
+          }
+          firestoreDb = firebase.firestore();
+          isFirestoreActive = true;
+        } catch (err) {
+          console.warn('Firebase init fallback to localStorage:', err);
+          isFirestoreActive = false;
+        }
+      } else {
+        isFirestoreActive = false;
+      }
+    }
+
+    // Wrap all student data reads/writes in an async db_ layer
+    async function db_getStudentByEmail(email) {
+      if (!email) return null;
+      const cleanEmail = email.trim().toLowerCase();
+
+      if (isFirestoreActive && firestoreDb) {
+        try {
+          const snapshot = await firestoreDb.collection('students').where('email', '==', cleanEmail).limit(1).get();
+          if (!snapshot.empty) {
+            const data = snapshot.docs[0].data();
+            const idx = state.profiles.findIndex(p => p.id === data.id);
+            if (idx >= 0) state.profiles[idx] = data;
+            else state.profiles.push(data);
+            saveState();
+            return data;
+          }
+        } catch (err) {
+          console.warn('Firestore read error in db_getStudentByEmail:', err);
+        }
+      }
+      return state.profiles.find(p => p.role === 'student' && (p.email || '').trim().toLowerCase() === cleanEmail) || null;
+    }
+
+    async function db_getStudent(uid) {
+      if (!uid) return null;
+      if (isFirestoreActive && firestoreDb) {
+        try {
+          const docSnap = await firestoreDb.collection('students').doc(uid).get();
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            const idx = state.profiles.findIndex(p => p.id === data.id);
+            if (idx >= 0) state.profiles[idx] = data;
+            else state.profiles.push(data);
+            saveState();
+            return data;
+          }
+        } catch (err) {
+          console.warn('Firestore read error in db_getStudent:', err);
+        }
+      }
+      return state.profiles.find(p => p.id === uid) || null;
+    }
+
+    async function db_saveStudent(student) {
+      if (!student || !student.id) return;
+
+      const idx = state.profiles.findIndex(p => p.id === student.id);
+      if (idx >= 0) {
+        state.profiles[idx] = student;
+      } else {
+        state.profiles.push(student);
+      }
+      saveState();
+
+      try {
+        const list = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
+        const mIdx = list.findIndex(s => s.id === student.id);
+        if (mIdx >= 0) list[mIdx] = student;
+        else list.push(student);
+        localStorage.setItem('medtrack_students', JSON.stringify(list));
+      } catch (e) {}
+
+      if (isFirestoreActive && firestoreDb) {
+        try {
+          await firestoreDb.collection('students').doc(student.id).set(student, { merge: true });
+        } catch (err) {
+          console.warn('Firestore write error in db_saveStudent:', err);
+        }
+      }
+    }
+
+    async function db_listStudents() {
+      if (isFirestoreActive && firestoreDb) {
+        try {
+          const snapshot = await firestoreDb.collection('students').get();
+          const list = [];
+          snapshot.forEach(doc => {
+            list.push(doc.data());
+          });
+          list.forEach(st => {
+            const idx = state.profiles.findIndex(p => p.id === st.id);
+            if (idx >= 0) state.profiles[idx] = st;
+            else state.profiles.push(st);
+          });
+          saveState();
+          return list.filter(p => p.role === 'student');
+        } catch (err) {
+          console.warn('Firestore list error in db_listStudents:', err);
+        }
+      }
+      return state.profiles.filter(p => p.role === 'student');
+    }
+
+    async function db_deleteStudent(uid) {
+      if (!uid) return;
+      state.profiles = state.profiles.filter(p => p.id !== uid);
+      saveState();
+
+      try {
+        let list = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
+        list = list.filter(s => s.id !== uid);
+        localStorage.setItem('medtrack_students', JSON.stringify(list));
+      } catch (e) {}
+
+      if (isFirestoreActive && firestoreDb) {
+        try {
+          await firestoreDb.collection('students').doc(uid).delete();
+        } catch (err) {
+          console.warn('Firestore delete error in db_deleteStudent:', err);
+        }
+      }
+    }
+
+    const STORAGE_KEY = 'medical_tracker_v2';
+
+    function showToast(msg, duration = 3000) {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span>✨</span><span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    let state = {
+      profiles: [
+        { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' }
+      ],
+      currentUser: null
+    };
+
+    let selectedPaperId = null;
+    let selectedChapterIdx = null;
+    let pendingBlocks = [];
+    let drillStudentId = null;
+
+    // Chart instances
+    let classChartInstance = null;
+    let drillRankChartInstance = null;
+    let drillPaperChartInstance = null;
+    let drillMasteryChartInstance = null;
+    let drillRoutineChartInstance = null;
+
+    function loadState() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          state = JSON.parse(stored);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      // Sync medtrack_students into state.profiles
+      const localList = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
+      localList.forEach(st => {
+        const idx = state.profiles.findIndex(p => p.id === st.id);
+        if (idx >= 0) state.profiles[idx] = st;
+        else state.profiles.push(st);
+      });
+
+      // Migrate and normalize student schema
+      state.profiles.forEach(p => {
+        if (p.role === 'student') {
+          if (!Array.isArray(p.marks)) p.marks = [];
+          p.marks.forEach(m => {
+            const tot = parseFloat(m.total) || 1;
+            const corr = parseFloat(m.correct) || 0;
+            if (m.wrong === undefined) m.wrong = Math.max(0, tot - corr);
+            if (m.skipped === undefined) m.skipped = Math.max(0, tot - corr - (parseFloat(m.wrong) || 0));
+            if (m.mistakeCategory === undefined) m.mistakeCategory = null;
+          });
+          if (!Array.isArray(p.milestones)) p.milestones = [];
+          if (p.use200Scale === undefined) p.use200Scale = false;
+          refreshStudentCategories(p);
+        }
+      });
+
+      let admin = state.profiles.find(p => p.role === 'admin');
+      if (!admin) {
+        state.profiles.unshift({ role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' });
+      } else {
+        // Guarantee fixed admin credentials
+        admin.email = 'rayanbinakter@gmail.com';
+        admin.password = '17514';
+      }
+      initFirebase();
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    /* =========================================================================
+       3. CALCULATIONS & CATEGORIES (Exact 6 Categories System)
+       ========================================================================= */
+    const SUBJECTS = [
+      { id: 'bio', name: 'বায়োলজি' },
+      { id: 'chem', name: 'রসায়ন' },
+      { id: 'phy', name: 'পদার্থবিজ্ঞান' }
+    ];
+
+    const WEIGHTS = {
+      bio: 30,
+      chem: 25,
+      phy: 20
+    };
+
+    function getSubjectIdForChapter(chapterId) {
+      if (typeof chapterId === 'string') {
+        if (chapterId.startsWith('bio')) return 'bio';
+        if (chapterId.startsWith('chem')) return 'chem';
+        if (chapterId.startsWith('phy')) return 'phy';
+      }
+      const item = SYLLABUS[chapterId];
+      if (item && item[0]) {
+        if (item[0].startsWith('bio')) return 'bio';
+        if (item[0].startsWith('chem')) return 'chem';
+        if (item[0].startsWith('phy')) return 'phy';
+      }
+      return null;
+    }
+
+    function categoryFromScore100(pct) {
+      if (pct >= 85) return 'Diamond';
+      if (pct >= 80) return 'Gold';
+      if (pct >= 75) return 'Metal';
+      if (pct >= 72) return 'Silver';
+      if (pct >= 65) return 'Pass';
+      return 'Red Zone';
+    }
+
+    function categoryFromScore200(pct) {
+      if (pct >= 185) return 'Diamond';
+      if (pct >= 181) return 'Gold';
+      if (pct >= 176) return 'Metal';
+      if (pct >= 172) return 'Silver';
+      if (pct >= 162) return 'Pass';
+      return 'Red Zone';
+    }
+
+    const CATEGORY_DETAILS = {
+      'Diamond': {
+        en: 'Diamond',
+        bn: 'ডায়মন্ড',
+        icon: '🔷',
+        color: '#38bdf8',
+        bg: 'rgba(56, 189, 248, 0.15)',
+        border: 'rgba(56, 189, 248, 0.3)',
+        tier: 6
+      },
+      'Gold': {
+        en: 'Gold',
+        bn: 'গোল্ড',
+        icon: '🥇',
+        color: '#fbbf24',
+        bg: 'rgba(251, 191, 36, 0.15)',
+        border: 'rgba(251, 191, 36, 0.3)',
+        tier: 5
+      },
+      'Metal': {
+        en: 'Metal',
+        bn: 'মেটাল',
+        icon: '⚙️',
+        color: '#fb923c',
+        bg: 'rgba(251, 146, 60, 0.15)',
+        border: 'rgba(251, 146, 60, 0.3)',
+        tier: 4
+      },
+      'Silver': {
+        en: 'Silver',
+        bn: 'সিলভার',
+        icon: '🛡',
+        color: '#94a3b8',
+        bg: 'rgba(148, 163, 184, 0.15)',
+        border: 'rgba(148, 163, 184, 0.3)',
+        tier: 3
+      },
+      'Pass': {
+        en: 'Pass',
+        bn: 'পাস',
+        icon: '✅',
+        color: '#34d399',
+        bg: 'rgba(52, 211, 153, 0.15)',
+        border: 'rgba(52, 211, 153, 0.3)',
+        tier: 2
+      },
+      'Red Zone': {
+        en: 'Red Zone',
+        bn: 'রেড জোন',
+        icon: '⚠️',
+        color: '#f87171',
+        bg: 'rgba(248, 113, 113, 0.15)',
+        border: 'rgba(248, 113, 113, 0.3)',
+        tier: 1
+      }
+    };
+
+    function computeOverallAvg100(student) {
+      if (!student || !student.marks || !student.marks.length) return 0;
+      let num = 0, den = 0;
+      SUBJECTS.forEach(s => {
+        const entries = student.marks.filter(m => {
+          const sId = getSubjectIdForChapter(m.chapterId);
+          return sId === s.id;
+        });
+        if (!entries.length) return;
+        const totals = entries.map(m => {
+          const neg = (m.wrong || 0) * 0.25;
+          return (((parseFloat(m.correct) || 0) - neg) / Math.max(1, (parseFloat(m.total) || 1))) * 100;
+        });
+        const subjAvg = totals.reduce((a, b) => a + b, 0) / totals.length;
+        num += subjAvg * WEIGHTS[s.id];
+        den += WEIGHTS[s.id];
+      });
+      if (den === 0) {
+        let allCorr = 0, allTot = 0, allNeg = 0;
+        student.marks.forEach(m => {
+          allCorr += parseFloat(m.correct) || 0;
+          allTot += parseFloat(m.total) || 1;
+          allNeg += (parseFloat(m.wrong) || 0) * 0.25;
+        });
+        return Math.max(0, ((allCorr - allNeg) / allTot) * 100);
+      }
+      return num / den;
+    }
+
+    function computeProfileCategory100(student) {
+      if (!student || !student.marks || !student.marks.length) return 'Red Zone';
+      let num = 0, den = 0;
+      SUBJECTS.forEach(s => {
+        const entries = student.marks.filter(m => {
+          const sId = getSubjectIdForChapter(m.chapterId);
+          return sId === s.id;
+        });
+        if (!entries.length) return;
+        const totals = entries.map(m => {
+          const neg = (m.wrong || 0) * 0.25;
+          return (((parseFloat(m.correct) || 0) - neg) / Math.max(1, (parseFloat(m.total) || 1))) * 100;
+        });
+        const subjAvg = totals.reduce((a, b) => a + b, 0) / totals.length;
+        num += subjAvg * WEIGHTS[s.id];
+        den += WEIGHTS[s.id];
+      });
+      if (den === 0) return 'Red Zone';
+      return categoryFromScore100(num / den);
+    }
+
+    function refreshStudentCategories(student) {
+      if (!student || student.role !== 'student') return;
+      student.overallAvg100 = computeOverallAvg100(student);
+      student.category100 = computeProfileCategory100(student);
+      student.gpaScore = calcGPA(student.ssc, student.hsc, student.isSecondTimer);
+      if (student.gpaScore !== undefined) {
+        student.category200 = categoryFromScore200((student.overallAvg100 || 0) + student.gpaScore);
+      }
+    }
+
+    function calcGPA(ssc, hsc, isSecondTimer) {
+      const s = parseFloat(ssc) || 0;
+      const h = parseFloat(hsc) || 0;
+      const base = (s * 8) + (h * 12);
+      const penalty = isSecondTimer ? 3 : 0;
+      return Math.max(0, Math.min(100, base - penalty));
+    }
+
+    function calculateStudentMetrics(student) {
+      if (!student || student.role !== 'student') return null;
+
+      const marks = student.marks || [];
+      const totalAttempts = marks.length;
+
+      let bioCorrect = 0, bioTotal = 0;
+      let chemCorrect = 0, chemTotal = 0;
+      let phyCorrect = 0, phyTotal = 0;
+      let allCorrect = 0, allTotal = 0;
+
+      marks.forEach(m => {
+        const item = SYLLABUS[m.chapterId];
+        if (!item) return;
+        const paper = item[0];
+        const c = parseFloat(m.correct) || 0;
+        const t = parseFloat(m.total) || 0;
+
+        allCorrect += c;
+        allTotal += t;
+
+        if (paper.startsWith('bio')) { bioCorrect += c; bioTotal += t; }
+        else if (paper.startsWith('chem')) { chemCorrect += c; chemTotal += t; }
+        else if (paper.startsWith('phy')) { phyCorrect += c; phyTotal += t; }
+      });
+
+      const sscScore = (parseFloat(student.ssc) || 0) * 8;
+      const hscScore = (parseFloat(student.hsc) || 0) * 12;
+      const baseGPA = sscScore + hscScore;
+      const penalty = student.isSecondTimer ? 3 : 0;
+      const gpaScore = Math.max(0, Math.min(100, baseGPA - penalty));
+
+      const writtenAvgPct = allTotal > 0 ? (allCorrect / allTotal) : 0;
+      const streakBonus = Math.min(6, (student.streak || 0) * 0.3);
+      const writtenScore = Math.min(100, (writtenAvgPct * 100) + streakBonus);
+
+      const grandTotal = totalAttempts > 0 ? (gpaScore + writtenScore) : gpaScore;
+
+      // Rank calculation
+      let rank = '—';
+      if (totalAttempts > 0) {
+        let idx = DIST_SAMPLES.findIndex(val => grandTotal <= val);
+        if (idx === -1) idx = 100;
+        rank = Math.max(1, 100 - idx);
+      }
+
+      return {
+        totalAttempts,
+        sscScore,
+        hscScore,
+        baseGPA,
+        penalty,
+        gpaScore,
+        writtenAvgPct,
+        writtenScore,
+        grandTotal,
+        rank,
+        bio: { correct: bioCorrect, total: bioTotal },
+        chem: { correct: chemCorrect, total: chemTotal },
+        phy: { correct: phyCorrect, total: phyTotal },
+        all: { correct: allCorrect, total: allTotal }
+      };
+    }
+
+    /* =========================================================================
+       4. NAVIGATION & VIEW SWITCHING
+       ========================================================================= */
+    const VIEWS = [
+      'view-login', 'view-home', 'view-subjects', 'view-paper',
+      'view-routine', 'view-settings', 'view-admin-home',
+      'view-student-analytics', 'view-admin-routine'
+    ];
+
+    function navigate(viewName) {
+      VIEWS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+
+      const target = document.getElementById('view-' + viewName);
+      if (target) target.classList.remove('hidden');
+
+      // Update Nav buttons
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('nav-' + viewName);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      closeDropdown();
+
+      // View-specific renderers
+      if (viewName === 'login') renderLoginScreen();
+      else if (viewName === 'home') renderStudentHome();
+      else if (viewName === 'subjects') renderSubjectsGrid();
+      else if (viewName === 'paper') renderPaperChapters(selectedPaperId);
+      else if (viewName === 'routine') renderStudentRoutine();
+      else if (viewName === 'settings') renderSettings();
+      else if (viewName === 'admin-home') renderAdminDashboard();
+      else if (viewName === 'student-analytics') renderStudentAnalytics(drillStudentId);
+      else if (viewName === 'admin-routine') renderAdminRoutineBuilder();
+
+      window.scrollTo(0, 0);
+    }
+
+    function handleBrandClick() {
+      if (!state.currentUser) navigate('login');
+      else if (state.currentUser.role === 'admin') navigate('admin-home');
+      else navigate('home');
+    }
+
+    /* =========================================================================
+       5. LOGIN FLOW & AUTHENTICATION
+       ========================================================================= */
+    const session = { user: null };
+
+    function showLogin() {
+      navigate('login');
+    }
+
+    function setLoginError(msg) {
+      const el = document.getElementById('li-error');
+      if (el) el.textContent = msg;
+    }
+
+    function renderLoginScreen() {
+      document.getElementById('top-nav').classList.add('hidden');
+      const emailInput = document.getElementById('li-email');
+      const pinInput = document.getElementById('li-pin');
+      const msgEl = document.getElementById('li-error');
+      if (emailInput) emailInput.value = '';
+      if (pinInput) pinInput.value = '';
+      if (msgEl) msgEl.textContent = '';
+    }
+
+    function handleLoginEmailInput(e) {
+      const email = e.target.value.trim();
+      const msgEl = document.getElementById('li-error');
+      if (msgEl) msgEl.textContent = '';
+
+      // Auto-focus PIN field when a valid email format is entered
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailPattern.test(email)) {
+        const pinInput = document.getElementById('li-pin');
+        if (pinInput && document.activeElement === e.target) {
+          pinInput.focus();
+        }
+      }
+    }
+
+    function openSignUpWithEmail(rawEmail) {
+      openSignUpModal();
+      if (rawEmail) {
+        try {
+          document.getElementById('su-email').value = decodeURIComponent(rawEmail);
+        } catch (err) {
+          document.getElementById('su-email').value = rawEmail;
+        }
+      }
+    }
+
+    function attemptLogin() {
+      const errEl = document.getElementById('li-error');
+      const emailRaw = document.getElementById('li-email').value;
+      const pinRaw  = document.getElementById('li-pin').value;
+      const email = emailRaw.trim().toLowerCase();
+      const pin   = pinRaw.trim();
+
+      console.log('[login] attempt', { email, pin });
+
+      // 1. Visible feedback IMMEDIATELY — proves click handler fired
+      errEl.style.color = 'var(--text-dim)';
+      errEl.textContent = 'যাচাই হচ্ছে…';
+
+      setTimeout(() => {
+        // 2. Read storage
+        const all = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
+        console.log('[login] students in storage:', all.length, all.map(s => s.email));
+
+        if (!all.length) {
+          errEl.style.color = 'var(--rose)';
+          errEl.textContent = '✗ storage খালি — seedStudents() রান হয়নি';
+          return;
+        }
+
+        // 3. Find student by email
+        const stu = all.find(s => s.email && s.email.toLowerCase() === email);
+        if (!stu) {
+          errEl.style.color = 'var(--rose)';
+          errEl.textContent = '✗ এই ইমেইলে কোনো অ্যাকাউন্ট নেই';
+          return;
+        }
+
+        // 4. Compare PIN hash
+        const hashed = hashPin(pin);
+        console.log('[login] hash check', { hashed, stored: stu.pinHash, ok: hashed === stu.pinHash });
+        if (hashed !== stu.pinHash) {
+          errEl.style.color = 'var(--rose)';
+          errEl.textContent = '✗ ভুল পিন';
+          return;
+        }
+
+        // 5. Success
+        errEl.style.color = 'var(--emerald)';
+        errEl.textContent = '✓ সফল! ঢুকছো…';
+        session.user = { role: 'student', id: stu.id };
+        setTimeout(() => enterStudentApp(stu), 250);
+      }, 50);
+    }
+
+    async function enterStudentApp(stu) {
+      session.user = { role: 'student', id: stu.id };
+      state.currentUser = session.user;
+      const idx = state.profiles.findIndex(p => p.id === stu.id);
+      if (idx >= 0) state.profiles[idx] = stu;
+      else state.profiles.push(stu);
+      saveState();
+
+      // Check daily streak
+      const today = new Date().toISOString().split('T')[0];
+      if (stu.lastActive !== today) {
+        stu.streak = (stu.streak || 0) + 1;
+        stu.lastActive = today;
+        await db_saveStudent(stu);
+      }
+
+      setupNavForUser('student', stu);
+      navigate('home');
+    }
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('adm-login-email').value.trim().toLowerCase();
+      const pass = document.getElementById('adm-login-password').value.trim();
+
+      // Fixed admin credentials: rayanbinakter@gmail.com / 17514
+      if (email === 'rayanbinakter@gmail.com' && pass === '17514') {
+        closeModal('modal-admin-login');
+        let admin = state.profiles.find(p => p.role === 'admin');
+        if (!admin) {
+          admin = { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' };
+          state.profiles.unshift(admin);
+        }
+        state.currentUser = { role: 'admin', id: admin.id };
+        saveState();
+        setupNavForUser('admin', admin);
+        navigate('admin-home');
+      } else {
+        alert('ভুল অ্যাডমিন ইমেইল বা পাসওয়ার্ড!');
+      }
+    }
+
+    function setupNavForUser(role, user) {
+      const topNav = document.getElementById('top-nav');
+      topNav.classList.remove('hidden');
+
+      const studentNav = document.getElementById('student-nav-center');
+      const adminNav = document.getElementById('admin-nav-center');
+      const statPill = document.getElementById('student-stat-pill');
+      const dropdownItems = document.getElementById('student-dropdown-items');
+      const avatarBtn = document.getElementById('user-avatar');
+
+      if (role === 'admin') {
+        studentNav.classList.add('hidden');
+        adminNav.classList.remove('hidden');
+        statPill.classList.add('hidden');
+        dropdownItems.classList.add('hidden');
+        avatarBtn.textContent = '🛡️';
+      } else {
+        studentNav.classList.remove('hidden');
+        adminNav.classList.add('hidden');
+        statPill.classList.remove('hidden');
+        dropdownItems.classList.remove('hidden');
+        avatarBtn.textContent = user.name ? user.name.charAt(0) : 'শ';
+
+        const metrics = calculateStudentMetrics(user);
+        document.getElementById('nav-streak').textContent = `${user.streak || 0} দিন`;
+        document.getElementById('nav-rank').textContent = metrics.rank !== '—' ? `#${metrics.rank}/১০০` : '#—/১০০';
+      }
+    }
+
+    function logout() {
+      session.user = null;
+      state.currentUser = null;
+      saveState();
+      closeDropdown();
+      showLogin();
+    }
+
+    /* =========================================================================
+       6. STUDENT SIGN-UP
+       ========================================================================= */
+    function openSignUpModal() {
+      document.getElementById('su-name').value = '';
+      document.getElementById('su-email').value = '';
+      document.getElementById('su-ssc').value = '5.00';
+      document.getElementById('su-hsc').value = '5.00';
+      document.getElementById('su-timer').value = 'false';
+      document.getElementById('su-pin').value = '';
+      updateLiveGpaPreview();
+      openModal('modal-signup');
+    }
+
+    function updateLiveGpaPreview() {
+      const ssc = parseFloat(document.getElementById('su-ssc').value) || 0;
+      const hsc = parseFloat(document.getElementById('su-hsc').value) || 0;
+      const isSecond = document.getElementById('su-timer').value === 'true';
+
+      const sscPart = (ssc * 8).toFixed(2);
+      const hscPart = (hsc * 12).toFixed(2);
+      const finalGpa = calcGPA(ssc, hsc, isSecond).toFixed(2);
+
+      const penaltyText = isSecond ? ' - ৩' : '';
+      document.getElementById('su-gpa-formula').textContent = 
+        `SSC (${ssc.toFixed(2)} × ৮ = ${sscPart}) + HSC (${hsc.toFixed(2)} × ১২ = ${hscPart})${penaltyText} = ${finalGpa} / ১০০`;
+    }
+
+    async function handleCreateStudent(e) {
+      e.preventDefault();
+      const name = document.getElementById('su-name').value.trim();
+      const email = document.getElementById('su-email').value.trim().toLowerCase();
+      const ssc = parseFloat(document.getElementById('su-ssc').value) || 5.00;
+      const hsc = parseFloat(document.getElementById('su-hsc').value) || 5.00;
+      const isSecondTimer = document.getElementById('su-timer').value === 'true';
+      const rawPin = document.getElementById('su-pin').value.trim();
+
+      // Check if email already registered via db_
+      const existing = await db_getStudentByEmail(email);
+      if (existing) {
+        alert('এই ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে! অনুগ্রহ করে লগইন করুন।');
+        return;
+      }
+
+      const newStudent = {
+        role: 'student',
+        id: 'st-' + Date.now(),
+        name,
+        email,
+        pinHash: hashPin(rawPin),
+        pin: hashPin(rawPin),
+        ssc: ssc.toFixed(2),
+        hsc: hsc.toFixed(2),
+        isSecondTimer,
+        marks: [],
+        routines: [],
+        completions: [],
+        streak: 1,
+        lastActive: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+
+      await db_saveStudent(newStudent);
+      closeModal('modal-signup');
+      await enterStudentApp(newStudent);
+    }
+
+    /* =========================================================================
+       7. STUDENT HOME VIEW
+       ========================================================================= */
+    function getCurrentStudent() {
+      if (!state.currentUser || state.currentUser.role !== 'student') return null;
+      return state.profiles.find(p => p.id === state.currentUser.id) || null;
+    }
+
+    let thinkingPieChartInstance = null;
+    let thinkingProgressionChartInstance = null;
+    let thinkingMistakeChartInstance = null;
+
+    function renderStudentHome() {
+      const student = getCurrentStudent();
+      if (!student) return;
+
+      refreshStudentCategories(student);
+      const m = calculateStudentMetrics(student);
+
+      const avg100 = student.overallAvg100 || 0;
+      const gpa = (student.gpaScore !== undefined ? student.gpaScore : calcGPA(student.ssc, student.hsc, student.isSecondTimer));
+      const score200 = avg100 + gpa;
+
+      const homeScoreHeader = document.getElementById('home-score-header');
+      const catBadgeEl = document.getElementById('home-category-badge');
+
+      if (student.use200Scale) {
+        const cat200Key = student.category200 || 'Red Zone';
+        const meta200 = CATEGORY_DETAILS[cat200Key] || CATEGORY_DETAILS['Red Zone'];
+        if (homeScoreHeader) {
+          homeScoreHeader.textContent = student.marks.length > 0
+            ? `২০০ নম্বরে ${score200.toFixed(2)} / ২০০`
+            : `২০০ নম্বরে — / ২০০`;
+        }
+        if (catBadgeEl) {
+          catBadgeEl.textContent = `ক্যাটাগরি: ${meta200.icon} ${meta200.en} (${meta200.bn})`;
+          catBadgeEl.style.color = meta200.color;
+          catBadgeEl.style.background = meta200.bg;
+          catBadgeEl.style.borderColor = meta200.border;
+        }
+      } else {
+        const cat100Key = student.category100 || 'Red Zone';
+        const meta100 = CATEGORY_DETAILS[cat100Key] || CATEGORY_DETAILS['Red Zone'];
+        if (homeScoreHeader) {
+          homeScoreHeader.textContent = student.marks.length > 0
+            ? `তোমার গড়: ${avg100.toFixed(2)} / ১০০`
+            : `তোমার গড়: — / ১০০`;
+        }
+        if (catBadgeEl) {
+          catBadgeEl.textContent = `ক্যাটাগরি: ${meta100.icon} ${meta100.en} (${meta100.bn})`;
+          catBadgeEl.style.color = meta100.color;
+          catBadgeEl.style.background = meta100.bg;
+          catBadgeEl.style.borderColor = meta100.border;
+        }
+      }
+
+      const catRankPill = document.getElementById('home-cat-rank-pill');
+      if (catRankPill) {
+        catRankPill.textContent = m.rank !== '—' ? `📍 #${m.rank} / ১০০` : '📍 #— / ১০০';
+      }
+
+      // Rank orb
+      const rankNumEl = document.getElementById('home-rank-num');
+      const rankOrbEl = document.getElementById('home-rank-orb');
+      if (m.rank !== '—') {
+        rankNumEl.textContent = `#${m.rank}`;
+        const pct = (101 - m.rank);
+        rankOrbEl.style.setProperty('--orb-deg', `${pct * 3.6}deg`);
+      } else {
+        rankNumEl.textContent = '#—';
+        rankOrbEl.style.setProperty('--orb-deg', '0deg');
+      }
+
+      // Breakdown table
+      document.getElementById('row-ssc').textContent = `${m.sscScore.toFixed(2)} / ৪০`;
+      document.getElementById('row-hsc').textContent = `${m.hscScore.toFixed(2)} / ৬০`;
+      document.getElementById('row-base-gpa').textContent = `${m.baseGPA.toFixed(2)} / ১০০`;
+
+      const penaltyTr = document.getElementById('row-penalty-tr');
+      if (student.isSecondTimer) {
+        penaltyTr.classList.remove('hidden');
+        document.getElementById('row-penalty').textContent = '-৩.০০';
+      } else {
+        penaltyTr.classList.add('hidden');
+      }
+
+      document.getElementById('row-written').textContent = m.totalAttempts > 0 ? `${m.writtenScore.toFixed(2)} / ১০০` : '—';
+      document.getElementById('row-total').textContent = `${m.grandTotal.toFixed(2)} / ২০০`;
+
+      // 4 Stat Cards
+      document.getElementById('stat-bio').textContent = m.bio.total > 0 ? `${m.bio.correct}/${m.bio.total}` : '—';
+      document.getElementById('stat-chem').textContent = m.chem.total > 0 ? `${m.chem.correct}/${m.chem.total}` : '—';
+      document.getElementById('stat-phy').textContent = m.phy.total > 0 ? `${m.phy.correct}/${m.phy.total}` : '—';
+      document.getElementById('stat-overall').textContent = m.all.total > 0 ? `${m.all.correct}/${m.all.total}` : '—';
+
+      // Weak Chapters (<50% mastery)
+      const weakList = document.getElementById('home-weak-list');
+      const chapterAverages = {};
+      student.marks.forEach(mk => {
+        if (!chapterAverages[mk.chapterId]) chapterAverages[mk.chapterId] = { correct: 0, total: 0 };
+        chapterAverages[mk.chapterId].correct += parseFloat(mk.correct) || 0;
+        chapterAverages[mk.chapterId].total += parseFloat(mk.total) || 0;
+      });
+
+      const weakItems = [];
+      Object.keys(chapterAverages).forEach(cId => {
+        const item = chapterAverages[cId];
+        const ratio = item.correct / item.total;
+        if (ratio < 0.5) {
+          weakItems.push({ chapterId: cId, ...item, ratio });
+        }
+      });
+
+      if (weakItems.length === 0) {
+        weakList.innerHTML = '<div class="empty-state">কোনো দুর্বল অধ্যায় নেই</div>';
+      } else {
+        weakList.innerHTML = weakItems.map(w => {
+          const chap = SYLLABUS[w.chapterId];
+          return `
+            <div class="chapter-item" style="margin-bottom: 6px;">
+              <div class="chapter-left">
+                <div class="status-dot rose"></div>
+                <span style="font-size: 13px; font-weight: 500;">${chap ? chap[1] : 'অধ্যায়'}</span>
+              </div>
+              <span style="font-size: 13px; font-weight: 600;" class="text-rose">${w.correct}/${w.total}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Recent Activity
+      const recentList = document.getElementById('home-recent-list');
+      if (student.marks.length === 0) {
+        recentList.innerHTML = '<div class="empty-state">কোনো অনুশীলনের রেকর্ড নেই</div>';
+      } else {
+        const sortedMarks = [...student.marks].reverse().slice(0, 5);
+        recentList.innerHTML = sortedMarks.map(mk => {
+          const chap = SYLLABUS[mk.chapterId];
+          const mistakeLabel = mk.mistakeCategory ? ` • <span style="color: #f87171;">${mk.mistakeCategory}</span>` : '';
+          return `
+            <div class="chapter-item" style="margin-bottom: 6px;">
+              <div class="chapter-left">
+                <div class="status-dot indigo"></div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 500;">${chap ? chap[1] : 'অধ্যায়'}</div>
+                  <div style="font-size: 11px; color: var(--text-dim);">${mk.date} ${mk.note ? '• ' + mk.note : ''}${mistakeLabel}</div>
+                </div>
+              </div>
+              <span style="font-size: 13px; font-weight: 600;">${mk.correct}/${mk.total}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Study Thinking Stats
+      renderThinkingStats(student);
+
+      // Update Nav stats
+      setupNavForUser('student', student);
+    }
+
+    function renderThinkingStats(student) {
+      if (!student) return;
+      const marks = student.marks || [];
+
+      // Chart 1: Subject Time/Questions Distribution
+      const pieCanvas = document.getElementById('thinkingSubjectPieChart');
+      const pieEmpty = document.getElementById('thinking-pie-empty');
+      const takeawayEl = document.getElementById('thinking-subject-takeaway');
+
+      let bioQ = 0, chemQ = 0, phyQ = 0;
+      marks.forEach(m => {
+        const chap = SYLLABUS[m.chapterId];
+        if (!chap) return;
+        const p = chap[0];
+        const total = parseFloat(m.total) || 0;
+        if (p.startsWith('bio')) bioQ += total;
+        else if (p.startsWith('chem')) chemQ += total;
+        else if (p.startsWith('phy')) phyQ += total;
+      });
+
+      const totalQ = bioQ + chemQ + phyQ;
+
+      if (totalQ === 0) {
+        if (pieCanvas) pieCanvas.style.display = 'none';
+        if (pieEmpty) pieEmpty.classList.remove('hidden');
+        if (takeawayEl) takeawayEl.textContent = 'পর্যাপ্ত প্রশ্ন অনুশীলন করার পর বিশ্লেষণের অন্তর্দৃষ্টি প্রদর্শিত হবে।';
+      } else {
+        if (pieCanvas) pieCanvas.style.display = 'block';
+        if (pieEmpty) pieEmpty.classList.add('hidden');
+
+        const bioPct = Math.round((bioQ / totalQ) * 100);
+        const chemPct = Math.round((chemQ / totalQ) * 100);
+        const phyPct = Math.round((phyQ / totalQ) * 100);
+
+        let maxSub = 'বায়োলজি';
+        let maxPct = bioPct;
+        if (chemPct > maxPct) { maxSub = 'রসায়ন'; maxPct = chemPct; }
+        if (phyPct > maxPct) { maxSub = 'পদার্থবিজ্ঞান'; maxPct = phyPct; }
+
+        let minSub = 'পদার্থবিজ্ঞান';
+        let minPct = phyPct;
+        if (chemPct < minPct) { minSub = 'রসায়ন'; minPct = chemPct; }
+        if (bioPct < minPct) { minSub = 'বায়োলজি'; minPct = bioPct; }
+
+        if (takeawayEl) {
+          takeawayEl.innerHTML = `💡 <b>${maxSub}</b>-এ সর্বাধিক সময় দেওয়া হয়েছে (${maxPct}%)। ভারসাম্য বজায় রাখতে <b>${minSub}</b> (${minPct}%)-এ মনোযোগ বাড়াও।`;
+        }
+
+        if (thinkingPieChartInstance) thinkingPieChartInstance.destroy();
+        if (pieCanvas) {
+          thinkingPieChartInstance = new Chart(pieCanvas, {
+            type: 'doughnut',
+            data: {
+              labels: ['বায়োলজি', 'রসায়ন', 'পদার্থ'],
+              datasets: [{
+                data: [bioQ, chemQ, phyQ],
+                backgroundColor: ['#10b981', '#818cf8', '#f59e0b'],
+                borderColor: '#18181b',
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: { color: '#94a3b8', boxWidth: 10, padding: 6, font: { size: 11 } }
+                }
+              }
+            }
+          });
+        }
+      }
+
+      // Chart 2: Category Progression Over Weeks / Attempts
+      const lineCanvas = document.getElementById('thinkingProgressionLineChart');
+      const lineEmpty = document.getElementById('thinking-line-empty');
+
+      if (marks.length === 0) {
+        if (lineCanvas) lineCanvas.style.display = 'none';
+        if (lineEmpty) lineEmpty.classList.remove('hidden');
+      } else {
+        if (lineCanvas) lineCanvas.style.display = 'block';
+        if (lineEmpty) lineEmpty.classList.add('hidden');
+
+        const chronologicalMarks = [...marks].sort((a, b) => (a.date > b.date ? 1 : -1));
+        const labels = [];
+        const scores = [];
+
+        let runningCorrect = 0, runningTotal = 0;
+        chronologicalMarks.forEach((m, idx) => {
+          runningCorrect += parseFloat(m.correct) || 0;
+          runningTotal += parseFloat(m.total) || 1;
+          const writtenPct = (runningCorrect / runningTotal) * 100;
+          const pointScore = student.use200Scale
+            ? Math.min(200, (calcGPA(student.ssc, student.hsc, student.isSecondTimer) + writtenPct))
+            : Math.min(100, writtenPct);
+
+          labels.push(m.date ? m.date.slice(5) : `#${idx + 1}`);
+          scores.push(Math.round(pointScore * 10) / 10);
+        });
+
+        if (thinkingProgressionChartInstance) thinkingProgressionChartInstance.destroy();
+        if (lineCanvas) {
+          thinkingProgressionChartInstance = new Chart(lineCanvas, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: student.use200Scale ? '২০০ স্কেল অগ্রগতি' : '১০০ স্কেল অগ্রগতি',
+                data: scores,
+                borderColor: '#818cf8',
+                backgroundColor: 'rgba(129, 140, 248, 0.15)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointBackgroundColor: '#818cf8'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: student.use200Scale ? 200 : 100,
+                  grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                  ticks: { color: '#94a3b8', font: { size: 10 } }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: '#94a3b8', font: { size: 10 }, maxTicksLimit: 6 }
+                }
+              },
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          });
+        }
+      }
+
+      // Chart 3: Mistake-Type Distribution
+      const barCanvas = document.getElementById('thinkingMistakeBarChart');
+      const barEmpty = document.getElementById('thinking-bar-empty');
+
+      const mistakeCounts = { silly: 0, formula: 0, concept: 0, time: 0 };
+      let taggedMistakes = 0;
+      marks.forEach(m => {
+        if (m.mistakeCategory && mistakeCounts[m.mistakeCategory] !== undefined) {
+          mistakeCounts[m.mistakeCategory]++;
+          taggedMistakes++;
+        }
+      });
+
+      if (taggedMistakes === 0) {
+        if (barCanvas) barCanvas.style.display = 'none';
+        if (barEmpty) barEmpty.classList.remove('hidden');
+      } else {
+        if (barCanvas) barCanvas.style.display = 'block';
+        if (barEmpty) barEmpty.classList.add('hidden');
+
+        if (thinkingMistakeChartInstance) thinkingMistakeChartInstance.destroy();
+        if (barCanvas) {
+          thinkingMistakeChartInstance = new Chart(barCanvas, {
+            type: 'bar',
+            data: {
+              labels: ['Silly', 'Formula', 'Concept', 'Time'],
+              datasets: [{
+                label: 'ভুলের সংখ্যা',
+                data: [mistakeCounts.silly, mistakeCounts.formula, mistakeCounts.concept, mistakeCounts.time],
+                backgroundColor: ['#f87171', '#fb923c', '#fbbf24', '#a78bfa'],
+                borderRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { stepSize: 1, color: '#94a3b8', font: { size: 10 } },
+                  grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: '#94a3b8', font: { size: 10 } }
+                }
+              },
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    /* =========================================================================
+       8. SUBJECTS & CHAPTERS
+       ========================================================================= */
+    function renderSubjectsGrid() {
+      const student = getCurrentStudent();
+      const grid = document.getElementById('subjects-grid');
+      grid.innerHTML = '';
+
+      Object.keys(PAPERS).forEach(paperKey => {
+        const paper = PAPERS[paperKey];
+        const paperChapters = SYLLABUS.filter(item => item[0] === paperKey);
+        
+        let attemptsCount = 0;
+        let totalScoreCorrect = 0, totalScorePossible = 0;
+
+        if (student) {
+          student.marks.forEach(m => {
+            const chap = SYLLABUS[m.chapterId];
+            if (chap && chap[0] === paperKey) {
+              attemptsCount++;
+              totalScoreCorrect += parseFloat(m.correct) || 0;
+              totalScorePossible += parseFloat(m.total) || 0;
+            }
+          });
+        }
+
+        const scoreText = totalScorePossible > 0 ? `${totalScoreCorrect}/${totalScorePossible}` : '—';
+        const progressPct = paperChapters.length > 0 ? Math.min(100, (attemptsCount / paperChapters.length) * 100) : 0;
+
+        const card = document.createElement('div');
+        card.className = 'subject-card';
+        card.onclick = () => {
+          selectedPaperId = paperKey;
+          navigate('paper');
+        };
+        card.innerHTML = `
+          <div>
+            <div class="subject-name">${paper.name}</div>
+            <div class="subject-meta">${paperChapters.length}টি অধ্যায় • প্রাপ্ত স্কোর: ${scoreText}</div>
+          </div>
+          <div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width: ${progressPct}%;"></div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-dim); margin-top: 6px; text-align: right;">${attemptsCount}টি পরীক্ষা সম্পন্ন</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderPaperChapters(paperKey) {
+      if (!paperKey || !PAPERS[paperKey]) return;
+      const student = getCurrentStudent();
+
+      document.getElementById('paper-view-title').textContent = PAPERS[paperKey].name;
+      const list = document.getElementById('paper-chapters-list');
+      list.innerHTML = '';
+
+      SYLLABUS.forEach((item, idx) => {
+        if (item[0] !== paperKey) return;
+
+        let totalCorrect = 0, totalMarks = 0, attempts = 0;
+        if (student) {
+          student.marks.filter(m => m.chapterId === idx).forEach(m => {
+            attempts++;
+            totalCorrect += parseFloat(m.correct) || 0;
+            totalMarks += parseFloat(m.total) || 0;
+          });
+        }
+
+        let dotClass = '';
+        let scoreText = '—';
+
+        if (attempts > 0) {
+          scoreText = `${totalCorrect}/${totalMarks}`;
+          const ratio = totalCorrect / totalMarks;
+          if (ratio >= 0.75) dotClass = 'green';
+          else if (ratio >= 0.60) dotClass = 'indigo';
+          else if (ratio >= 0.50 || attempts < 3) dotClass = 'amber';
+          else dotClass = 'rose';
+        }
+
+        const row = document.createElement('div');
+        row.className = 'chapter-item';
+        row.onclick = () => openChapterEntryModal(idx, item[1], PAPERS[paperKey].name);
+        row.innerHTML = `
+          <div class="chapter-left">
+            <div class="status-dot ${dotClass}"></div>
+            <div>
+              <div style="font-size: 14px; font-weight: 500;">${item[1]}</div>
+              <div style="font-size: 12px; color: var(--text-dim);">${attempts > 0 ? `${attempts}টি প্রচেষ্টা` : 'অনুশীলন করা হয়নি'}</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 600;">${scoreText}</div>
+            <span style="font-size: 11px; color: var(--accent);">+ এন্ট্রি দিন</span>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    /* =========================================================================
+       9. CHAPTER ENTRY FORM & RESULT CARD
+       ========================================================================= */
+    function calculateSkipped() {
+      const total = parseFloat(document.getElementById('entry-total').value) || 0;
+      const correct = parseFloat(document.getElementById('entry-correct').value) || 0;
+      const wrong = parseFloat(document.getElementById('entry-wrong').value) || 0;
+      const skipped = Math.max(0, total - correct - wrong);
+      const skippedInput = document.getElementById('entry-skipped');
+      if (skippedInput) skippedInput.value = skipped;
+      
+      const errEl = document.getElementById('entry-error');
+      if (errEl) {
+        if (correct + wrong > total) {
+          errEl.textContent = 'মোট মিলছে না (সঠিক ও ভুল যোগফল মোট প্রশ্নের চেয়ে বেশি)';
+        } else {
+          errEl.textContent = '';
+        }
+      }
+    }
+
+    function openChapterEntryModal(chapterIdx, chapterName, paperName) {
+      selectedChapterIdx = chapterIdx;
+      document.getElementById('entry-paper-name').textContent = paperName;
+      document.getElementById('entry-chapter-title').textContent = chapterName;
+      document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('entry-total').value = '25';
+      document.getElementById('entry-correct').value = '';
+      document.getElementById('entry-wrong').value = '';
+      document.getElementById('entry-skipped').value = '25';
+      document.getElementById('entry-mistake-category').value = '';
+      document.getElementById('entry-note').value = '';
+      const errEl = document.getElementById('entry-error');
+      if (errEl) errEl.textContent = '';
+      openModal('chapter-entry-modal');
+    }
+
+    function closeChapterModal() {
+      closeModal('chapter-entry-modal');
+    }
+
+    async function handleSaveChapterMark(e) {
+      e.preventDefault();
+      const student = getCurrentStudent();
+      if (!student || selectedChapterIdx === null) return;
+
+      const date = document.getElementById('entry-date').value;
+      const total = parseFloat(document.getElementById('entry-total').value) || 0;
+      const correct = parseFloat(document.getElementById('entry-correct').value) || 0;
+      const wrong = parseFloat(document.getElementById('entry-wrong').value) || 0;
+      const skipped = parseFloat(document.getElementById('entry-skipped').value) || 0;
+      const mistakeCategory = document.getElementById('entry-mistake-category').value || null;
+      const note = document.getElementById('entry-note').value.trim();
+      const errEl = document.getElementById('entry-error');
+
+      if (total <= 0) {
+        if (errEl) errEl.textContent = 'মোট প্রশ্ন সংখ্যা অবশ্যই ১ বা তার বেশি হতে হবে';
+        return;
+      }
+
+      if (correct + wrong + skipped !== total || correct + wrong > total || correct < 0 || wrong < 0) {
+        if (errEl) errEl.textContent = 'মোট মিলছে না';
+        return;
+      }
+      if (errEl) errEl.textContent = '';
+
+      // Check current category tier before saving
+      const preCat100Key = student.category100 || 'Red Zone';
+      const preCat200Key = student.category200 || 'Red Zone';
+      const prevTier = student.use200Scale
+        ? (CATEGORY_DETAILS[preCat200Key]?.tier || 1)
+        : (CATEGORY_DETAILS[preCat100Key]?.tier || 1);
+
+      const entry = {
+        chapterId: selectedChapterIdx,
+        date,
+        correct,
+        wrong,
+        skipped,
+        total,
+        note,
+        mistakeCategory: mistakeCategory || null
+      };
+
+      if (!student.marks) student.marks = [];
+      student.marks.push(entry);
+
+      // Recalculate metrics & refresh categories
+      refreshStudentCategories(student);
+      const newM = calculateStudentMetrics(student);
+
+      const postCatKey = student.use200Scale ? student.category200 : student.category100;
+      const postCatMeta = CATEGORY_DETAILS[postCatKey] || CATEGORY_DETAILS['Red Zone'];
+      const currentTier = postCatMeta.tier || 1;
+
+      if (!student.milestones) student.milestones = [];
+      if (currentTier > prevTier) {
+        student.milestones.push({
+          date,
+          category: `${postCatMeta.icon} ${postCatMeta.en} (${postCatMeta.bn})`,
+          scale: student.use200Scale ? 200 : 100,
+          score: (student.use200Scale ? ((student.overallAvg100 || 0) + student.gpaScore) : (student.overallAvg100 || 0)).toFixed(2),
+          chapterName: SYLLABUS[selectedChapterIdx] ? SYLLABUS[selectedChapterIdx][1] : ''
+        });
+        showToast(`অভিনন্দন! তুমি এখন ${postCatMeta.icon} ${postCatMeta.en} (${postCatMeta.bn})-এ উন্নীত হয়েছো 🎉`, 4000);
+      }
+
+      await db_saveStudent(student);
+      closeChapterModal();
+
+      // Trigger Result Card popup after 50ms await
+      await new Promise(resolve => setTimeout(resolve, 50));
+      showResultCard(entry, student, newM);
+    }
+
+    let resultCardTimer = null;
+
+    function showResultCard(entry, student, m) {
+      const modal = document.getElementById('modal-result-card');
+      const body = document.getElementById('result-card-body');
+      if (!modal || !body) return;
+
+      const chap = SYLLABUS[entry.chapterId];
+      const chapName = chap ? chap[1] : 'অধ্যায়';
+      const paperKey = chap ? chap[0] : '';
+      const paper = PAPERS[paperKey];
+      const subjectName = paper ? paper.name : '';
+
+      const corr = parseFloat(entry.correct) || 0;
+      const wrg = parseFloat(entry.wrong) || 0;
+      const skp = parseFloat(entry.skipped) || 0;
+      const tot = parseFloat(entry.total) || 1;
+      const negMark = (wrg * 0.25).toFixed(2);
+
+      const attempt100 = Math.max(0, ((corr - (wrg * 0.25)) / tot) * 100).toFixed(2);
+      const gpaScore = (student.gpaScore !== undefined ? student.gpaScore : calcGPA(student.ssc, student.hsc, student.isSecondTimer)).toFixed(2);
+      const attempt200 = (parseFloat(attempt100) + parseFloat(gpaScore)).toFixed(2);
+
+      const catKey = student.use200Scale
+        ? categoryFromScore200(parseFloat(attempt200))
+        : categoryFromScore100(parseFloat(attempt100));
+      const catMeta = CATEGORY_DETAILS[catKey] || CATEGORY_DETAILS['Red Zone'];
+
+      body.innerHTML = `
+        <div style="font-size: 14px; line-height: 1.6; color: var(--text);">
+          <div style="margin-bottom: 2px;"><span style="color: var(--text-muted);">বিষয়:</span> <b>${subjectName}</b></div>
+          <div style="margin-bottom: 12px;"><span style="color: var(--text-muted);">অধ্যায়:</span> <b>${chapName}</b></div>
+
+          <div style="border-top: 1px solid var(--border-subtle); margin: 12px 0;"></div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #34d399; font-weight: 600;">সঠিক:</span>
+            <span><b>${corr}</b> <span style="font-size: 12px; color: var(--text-dim);">(মোট ${tot})</span></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #f87171; font-weight: 600;">ভুল:</span>
+            <span><b>${wrg}</b> <span style="font-size: 12px; color: var(--text-dim);">→ −${negMark} নেগেটিভ</span></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #94a3b8; font-weight: 600;">স্কিপড:</span>
+            <span><b>${skp}</b></span>
+          </div>
+
+          <div style="border-top: 1px solid var(--border-subtle); margin: 12px 0;"></div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: var(--text-muted);">১০০ নম্বরে এই প্রচেষ্টা:</span>
+            <span style="font-weight: 700; color: var(--text);">${attempt100}</span>
+          </div>
+
+          ${student.use200Scale ? `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-muted);">GPA (প্রোফাইল থেকে):</span>
+              <span style="font-weight: 600; color: var(--text);">${gpaScore}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-muted);">২০০ নম্বরে এই প্রচেষ্টা:</span>
+              <span style="font-weight: 700; color: var(--accent);">${attempt200}</span>
+            </div>
+          ` : ''}
+
+          <div style="border-top: 1px solid var(--border-subtle); margin: 12px 0;"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="color: var(--text-muted);">ক্যাটাগরি:</span>
+            <span style="font-weight: 700; color: ${catMeta.color}; background: ${catMeta.bg}; border: 1px solid ${catMeta.border}; padding: 3px 10px; border-radius: 6px;">
+              ${catMeta.icon} ${catMeta.en} (${catMeta.bn})
+            </span>
+          </div>
+
+          <div style="text-align: center; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent);">
+            📍 তুমি ১০০ জনের মধ্যে #${m.rank}
+          </div>
+        </div>
+      `;
+
+      openModal('modal-result-card');
+
+      if (resultCardTimer) clearTimeout(resultCardTimer);
+      resultCardTimer = setTimeout(() => {
+        closeResultCard();
+      }, 8000);
+    }
+
+    function closeResultCard() {
+      if (resultCardTimer) {
+        clearTimeout(resultCardTimer);
+        resultCardTimer = null;
+      }
+      closeModal('modal-result-card');
+      if (selectedPaperId) {
+        renderPaperChapters(selectedPaperId);
+      }
+    }
+
+    /* =========================================================================
+       10. STUDENT ROUTINE
+       ========================================================================= */
+    function renderStudentRoutine() {
+      const student = getCurrentStudent();
+      if (!student) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayRoutines = (student.routines || []).filter(r => r.date === today);
+      const allBlocks = [];
+      todayRoutines.forEach(r => {
+        (r.blocks || []).forEach((b, bIdx) => {
+          allBlocks.push({ ...b, routineDate: r.date, blockIdx: bIdx });
+        });
+      });
+
+      const container = document.getElementById('student-routine-list');
+      const progressEl = document.getElementById('routine-progress-text');
+
+      if (allBlocks.length === 0) {
+        container.innerHTML = '<div class="empty-state">আজকের জন্য কোনো রুটিন নির্ধারিত নেই।</div>';
+        progressEl.textContent = '০ / ০ সম্পন্ন';
+        return;
+      }
+
+      let completedCount = 0;
+      const todayCompletion = (student.completions || []).find(c => c.date === today);
+
+      container.innerHTML = allBlocks.map((b, idx) => {
+        const isDone = todayCompletion && todayCompletion.blocks && todayCompletion.blocks[idx];
+        if (isDone) completedCount++;
+
+        const chapNames = (b.chapters || []).map(cId => SYLLABUS[cId] ? SYLLABUS[cId][1] : '').filter(Boolean).join(', ');
+        const subName = PAPERS[b.subjectId] ? PAPERS[b.subjectId].name : b.subjectId;
+
+        return `
+          <div class="routine-block ${isDone ? 'done' : ''}">
+            <div>
+              <span class="routine-time">${b.time}</span>
+              <div class="routine-title">${b.title}</div>
+              <div class="routine-subject">${subName} ${chapNames ? '• ' + chapNames : ''}</div>
+              ${b.note ? `<div class="routine-note">${b.note}</div>` : ''}
+            </div>
+            <div>
+              <label class="checkbox-wrap">
+                <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleRoutineComplete(${idx}, this.checked)" />
+                <span>${isDone ? 'সম্পন্ন' : 'বাকি'}</span>
+              </label>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      progressEl.textContent = `${completedCount} / ${allBlocks.length} সম্পন্ন`;
+    }
+
+    async function toggleRoutineComplete(blockIdx, isChecked) {
+      const student = getCurrentStudent();
+      if (!student) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      if (!student.completions) student.completions = [];
+
+      let todayComp = student.completions.find(c => c.date === today);
+      if (!todayComp) {
+        todayComp = { date: today, blocks: {} };
+        student.completions.push(todayComp);
+      }
+      if (!todayComp.blocks) todayComp.blocks = {};
+      todayComp.blocks[blockIdx] = isChecked;
+
+      await db_saveStudent(student);
+      renderStudentRoutine();
+    }
+
+    /* =========================================================================
+       11. STUDENT SETTINGS & BACKUP
+       ========================================================================= */
+    function renderSettings() {
+      const student = getCurrentStudent();
+      if (!student) return;
+
+      document.getElementById('set-name').value = student.name || '';
+      document.getElementById('set-ssc').value = student.ssc || '5.00';
+      document.getElementById('set-hsc').value = student.hsc || '5.00';
+      document.getElementById('set-timer').value = student.isSecondTimer ? 'true' : 'false';
+      document.getElementById('set-pin').value = '';
+
+      const scaleToggle = document.getElementById('set-use-200-scale');
+      if (scaleToggle) {
+        scaleToggle.checked = !!student.use200Scale;
+      }
+
+      renderMilestonesList(student);
+    }
+
+    function renderMilestonesList(student) {
+      const listEl = document.getElementById('settings-milestones-list');
+      if (!listEl) return;
+      const milestones = student.milestones || [];
+
+      if (milestones.length === 0) {
+        listEl.innerHTML = '<div style="font-size: 12px; color: var(--text-dim); padding: 10px 0;">এখনো কোনো মাইলফলক রেকর্ড হয়নি। নিয়মিত অনুশীলন করে নতুন ক্যাটাগরিতে পৌঁছাও!</div>';
+        return;
+      }
+
+      listEl.innerHTML = milestones.map(m => `
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🏆</span>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text);">${m.category}</div>
+              <div style="font-size: 11px; color: var(--text-dim);">${m.date} • প্রাপ্ত স্কোর: ${m.score}/${m.scale} ${m.chapterName ? '• ' + m.chapterName : ''}</div>
+            </div>
+          </div>
+          <span style="font-size: 11px; color: var(--accent); font-weight: 600;">উত্তীর্ণ</span>
+        </div>
+      `).join('');
+    }
+
+    async function handleUpdateProfile(e) {
+      e.preventDefault();
+      const student = getCurrentStudent();
+      if (!student) return;
+
+      student.name = document.getElementById('set-name').value.trim();
+      student.ssc = parseFloat(document.getElementById('set-ssc').value).toFixed(2);
+      student.hsc = parseFloat(document.getElementById('set-hsc').value).toFixed(2);
+      student.isSecondTimer = document.getElementById('set-timer').value === 'true';
+
+      const scaleToggle = document.getElementById('set-use-200-scale');
+      if (scaleToggle) {
+        student.use200Scale = scaleToggle.checked;
+      }
+      
+      const newPin = document.getElementById('set-pin').value.trim();
+      if (newPin) {
+        student.pinHash = hashPin(newPin);
+        student.pin = hashPin(newPin);
+      }
+
+      await db_saveStudent(student);
+      alert('প্রোফাইল তথ্য সফলভাবে আপডেট হয়েছে!');
+      setupNavForUser('student', student);
+      renderSettings();
+    }
+
+    function exportDataJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `medical_tracker_backup_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importDataJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && Array.isArray(parsed.profiles)) {
+            state = parsed;
+            saveState();
+            alert('ডেটা সফলভাবে রিস্টোর করা হয়েছে!');
+            location.reload();
+          } else {
+            alert('ভুল ফাইল ফরম্যাট!');
+          }
+        } catch (err) {
+          alert('JSON পার্স করতে সমস্যা হয়েছে!');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* =========================================================================
+       12. ADMIN DASHBOARD & CHARTS
+       ========================================================================= */
+    async function renderAdminDashboard() {
+      const students = await db_listStudents();
+      const today = new Date().toISOString().split('T')[0];
+
+      // 6 Mini cards
+      document.getElementById('adm-total-students').textContent = students.length;
+      
+      const activeThisWeek = students.filter(st => {
+        if (!st.marks || st.marks.length === 0) return false;
+        const lastMark = st.marks[st.marks.length - 1];
+        const d = new Date(lastMark.date);
+        const diffDays = (Date.now() - d.getTime()) / (1000 * 3600 * 24);
+        return diffDays <= 7;
+      }).length;
+      document.getElementById('adm-active-week').textContent = activeThisWeek;
+
+      // Avg rank
+      const ranks = students.map(s => calculateStudentMetrics(s).rank).filter(r => r !== '—');
+      const avgRank = ranks.length > 0 ? Math.round(ranks.reduce((a, b) => a + b, 0) / ranks.length) : '—';
+      document.getElementById('adm-avg-rank').textContent = avgRank !== '—' ? `#${avgRank}` : '#—';
+
+      // Routine blocks stats
+      let totalTodayBlocks = 0;
+      let totalCompletedToday = 0;
+
+      students.forEach(st => {
+        const todayRout = (st.routines || []).find(r => r.date === today);
+        if (todayRout && todayRout.blocks) {
+          totalTodayBlocks += todayRout.blocks.length;
+        }
+        const todayComp = (st.completions || []).find(c => c.date === today);
+        if (todayComp && todayComp.blocks) {
+          totalCompletedToday += Object.values(todayComp.blocks).filter(Boolean).length;
+        }
+      });
+
+      document.getElementById('adm-today-blocks').textContent = totalTodayBlocks;
+      document.getElementById('adm-today-completed').textContent = totalCompletedToday;
+      document.getElementById('adm-avg-completion').textContent = totalTodayBlocks > 0 
+        ? `${totalCompletedToday}/${totalTodayBlocks}` 
+        : '—';
+
+      // Student List
+      const listEl = document.getElementById('admin-student-list');
+      listEl.innerHTML = '';
+      if (students.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">কোনো শিক্ষার্থী নেই</div>';
+      } else {
+        students.forEach(st => {
+          const m = calculateStudentMetrics(st);
+          const rankStr = m.rank !== '—' ? `#${m.rank}` : '#—';
+          const initial = st.name ? st.name.charAt(0) : 'শ';
+
+          const row = document.createElement('div');
+          row.className = 'profile-item';
+          row.onclick = () => {
+            drillStudentId = st.id;
+            navigate('student-analytics');
+          };
+          row.innerHTML = `
+            <div class="profile-left">
+              <div class="profile-avatar">${initial}</div>
+              <div class="profile-info">
+                <h4>${st.name}</h4>
+                <p>${st.email} • <span class="badge" style="background: var(--card-hover);">${m.totalAttempts} প্রচেষ্টা</span></p>
+              </div>
+            </div>
+            <div class="profile-rank">
+              <span class="badge">র‍্যাঙ্ক ${rankStr}</span>
+            </div>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      // Heatmap (Last 15 days)
+      const heatmapRow = document.getElementById('admin-heatmap-row');
+      heatmapRow.innerHTML = '';
+      const now = new Date();
+      for (let i = 14; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+
+        let logsOnDate = 0;
+        students.forEach(s => {
+          (s.marks || []).forEach(mk => {
+            if (mk.date === dateStr) logsOnDate++;
+          });
+        });
+
+        let levelClass = '';
+        if (logsOnDate >= 6) levelClass = 'l4';
+        else if (logsOnDate >= 4) levelClass = 'l3';
+        else if (logsOnDate >= 2) levelClass = 'l2';
+        else if (logsOnDate >= 1) levelClass = 'l1';
+
+        const cell = document.createElement('div');
+        cell.className = `heat-cell ${levelClass}`;
+        cell.title = `${dateStr}: ${logsOnDate}টি পরীক্ষা লগ`;
+        heatmapRow.appendChild(cell);
+      }
+
+      // Render Class Chart
+      renderAdminClassChart(students);
+    }
+
+    function renderAdminClassChart(students) {
+      const chartCanvas = document.getElementById('classAvgChart');
+      const emptyEl = document.getElementById('admin-chart-empty');
+
+      const paperKeys = ['phy1', 'phy2', 'chem1', 'chem2', 'bio1', 'bio2'];
+      const paperLabels = ['পদার্থ ১', 'পদার্থ ২', 'রসায়ন ১', 'রসায়ন ২', 'বায়ো ১', 'বায়ো ২'];
+      const paperAvgs = [0, 0, 0, 0, 0, 0];
+      const paperCounts = [0, 0, 0, 0, 0, 0];
+
+      let totalEntries = 0;
+      students.forEach(st => {
+        (st.marks || []).forEach(mk => {
+          const chap = SYLLABUS[mk.chapterId];
+          if (!chap) return;
+          const pIdx = paperKeys.indexOf(chap[0]);
+          if (pIdx !== -1) {
+            const correct = parseFloat(mk.correct) || 0;
+            const total = parseFloat(mk.total) || 1;
+            paperAvgs[pIdx] += (correct / total) * 100;
+            paperCounts[pIdx]++;
+            totalEntries++;
+          }
+        });
+      });
+
+      if (totalEntries === 0) {
+        chartCanvas.style.display = 'none';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      chartCanvas.style.display = 'block';
+      emptyEl.classList.add('hidden');
+
+      const finalData = paperAvgs.map((sum, i) => paperCounts[i] > 0 ? Math.round(sum / paperCounts[i]) : 0);
+
+      if (classChartInstance) classChartInstance.destroy();
+      classChartInstance = new Chart(chartCanvas, {
+        type: 'bar',
+        data: {
+          labels: paperLabels,
+          datasets: [{
+            label: 'ক্লাস গড় স্কোর (/১০০)',
+            data: finalData,
+            backgroundColor: 'rgba(129, 140, 248, 0.6)',
+            borderColor: '#818cf8',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    /* =========================================================================
+       13. PER-STUDENT ANALYTICS (Admin Drill-Down)
+       ========================================================================= */
+    async function renderStudentAnalytics(studentId) {
+      const student = await db_getStudent(studentId);
+      if (!student) {
+        navigate('admin-home');
+        return;
+      }
+
+      const m = calculateStudentMetrics(student);
+
+      // Header info
+      document.getElementById('drill-avatar').textContent = student.name ? student.name.charAt(0) : 'শ';
+      document.getElementById('drill-name').textContent = student.name;
+      document.getElementById('drill-email').textContent = student.email;
+      document.getElementById('drill-meta').textContent = 
+        `SSC: ${student.ssc} | HSC: ${student.hsc} | ${student.isSecondTimer ? '২য় বার (-৩)' : '১ম বার'} | স্ট্রিক: ${student.streak || 0} দিন`;
+      document.getElementById('drill-rank').textContent = m.rank !== '—' ? `#${m.rank}` : '#—';
+
+      // Chart 1: Rank Trend
+      renderDrillRankTrend(student);
+
+      // Chart 2: Paper Averages
+      renderDrillPaperAvg(student);
+
+      // Chart 3: Top 8 Chapter Mastery
+      renderDrillChapterMastery(student);
+
+      // Chart 4: Routine completion last 7 days
+      renderDrillRoutineComp(student);
+
+      // Recent Marks
+      const recentList = document.getElementById('drill-recent-marks-list');
+      if (student.marks.length === 0) {
+        recentList.innerHTML = '<div class="empty-state">কোনো পরীক্ষার ডেটা নেই</div>';
+      } else {
+        const sortedMarks = [...student.marks].reverse().slice(0, 8);
+        recentList.innerHTML = sortedMarks.map(mk => {
+          const chap = SYLLABUS[mk.chapterId];
+          return `
+            <div class="chapter-item" style="margin-bottom: 6px;">
+              <div class="chapter-left">
+                <div class="status-dot indigo"></div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 500;">${chap ? chap[1] : 'অধ্যায়'} (${chap ? PAPERS[chap[0]].name : ''})</div>
+                  <div style="font-size: 11px; color: var(--text-dim);">${mk.date} ${mk.note ? '• ' + mk.note : ''}</div>
+                </div>
+              </div>
+              <span style="font-size: 13px; font-weight: 600;">${mk.correct}/${mk.total}</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderDrillRankTrend(student) {
+      const canvas = document.getElementById('drillRankChart');
+      const empty = document.getElementById('drill-rank-empty');
+
+      if (!student.marks || student.marks.length === 0) {
+        canvas.style.display = 'none';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      canvas.style.display = 'block';
+      empty.classList.add('hidden');
+
+      const dates = [];
+      const rankPoints = [];
+      let runningCorrect = 0, runningTotal = 0;
+
+      const sscScore = (parseFloat(student.ssc) || 0) * 8;
+      const hscScore = (parseFloat(student.hsc) || 0) * 12;
+      const gpaScore = Math.max(0, Math.min(100, sscScore + hscScore - (student.isSecondTimer ? 3 : 0)));
+
+      student.marks.forEach(mk => {
+        runningCorrect += parseFloat(mk.correct) || 0;
+        runningTotal += parseFloat(mk.total) || 1;
+        dates.push(mk.date);
+
+        const writtenScore = (runningCorrect / runningTotal) * 100;
+        const grandTotal = gpaScore + writtenScore;
+        let idx = DIST_SAMPLES.findIndex(val => grandTotal <= val);
+        if (idx === -1) idx = 100;
+        rankPoints.push(Math.max(1, 100 - idx));
+      });
+
+      if (drillRankChartInstance) drillRankChartInstance.destroy();
+      drillRankChartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: 'র‍্যাঙ্ক',
+            data: rankPoints,
+            borderColor: '#818cf8',
+            backgroundColor: 'rgba(129, 140, 248, 0.1)',
+            fill: true,
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              reverse: true,
+              min: 1,
+              max: 100,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderDrillPaperAvg(student) {
+      const canvas = document.getElementById('drillPaperChart');
+      const empty = document.getElementById('drill-paper-empty');
+
+      const paperKeys = ['phy1', 'phy2', 'chem1', 'chem2', 'bio1', 'bio2'];
+      const paperLabels = ['পদার্থ ১', 'পদার্থ ২', 'রসায়ন ১', 'রসায়ন ২', 'বায়ো ১', 'বায়ো ২'];
+      const correctSum = [0, 0, 0, 0, 0, 0];
+      const totalSum = [0, 0, 0, 0, 0, 0];
+
+      (student.marks || []).forEach(mk => {
+        const chap = SYLLABUS[mk.chapterId];
+        if (!chap) return;
+        const idx = paperKeys.indexOf(chap[0]);
+        if (idx !== -1) {
+          correctSum[idx] += parseFloat(mk.correct) || 0;
+          totalSum[idx] += parseFloat(mk.total) || 1;
+        }
+      });
+
+      const paperData = correctSum.map((c, i) => totalSum[i] > 0 ? Math.round((c / totalSum[i]) * 100) : 0);
+
+      if (drillPaperChartInstance) drillPaperChartInstance.destroy();
+      drillPaperChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: paperLabels,
+          datasets: [{
+            label: 'গড় (/১০০)',
+            data: paperData,
+            backgroundColor: 'rgba(129, 140, 248, 0.6)',
+            borderColor: '#818cf8',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderDrillChapterMastery(student) {
+      const canvas = document.getElementById('drillMasteryChart');
+      const empty = document.getElementById('drill-mastery-empty');
+
+      const chapterScores = {};
+      (student.marks || []).forEach(mk => {
+        if (!chapterScores[mk.chapterId]) chapterScores[mk.chapterId] = { correct: 0, total: 0 };
+        chapterScores[mk.chapterId].correct += parseFloat(mk.correct) || 0;
+        chapterScores[mk.chapterId].total += parseFloat(mk.total) || 0;
+      });
+
+      const sortedChaps = Object.keys(chapterScores).map(cId => {
+        const item = chapterScores[cId];
+        const pct = item.total > 0 ? Math.round((item.correct / item.total) * 100) : 0;
+        return {
+          id: cId,
+          name: SYLLABUS[cId] ? SYLLABUS[cId][1] : 'অধ্যায়',
+          pct
+        };
+      }).sort((a, b) => b.pct - a.pct).slice(0, 8);
+
+      if (sortedChaps.length === 0) {
+        canvas.style.display = 'none';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      canvas.style.display = 'block';
+      empty.classList.add('hidden');
+
+      const labels = sortedChaps.map(c => c.name.length > 12 ? c.name.substring(0, 12) + '...' : c.name);
+      const data = sortedChaps.map(c => c.pct);
+      const colors = sortedChaps.map(c => c.pct >= 75 ? '#10b981' : (c.pct >= 50 ? '#f59e0b' : '#f43f5e'));
+
+      if (drillMasteryChartInstance) drillMasteryChartInstance.destroy();
+      drillMasteryChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: colors,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderDrillRoutineComp(student) {
+      const canvas = document.getElementById('drillRoutineChart');
+      const empty = document.getElementById('drill-routine-empty');
+
+      const labels = [];
+      const assigned = [];
+      const completed = [];
+      const now = new Date();
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        labels.push(dateStr.substring(5));
+
+        const r = (student.routines || []).find(rt => rt.date === dateStr);
+        const assignedCount = r && r.blocks ? r.blocks.length : 0;
+        assigned.push(assignedCount);
+
+        const c = (student.completions || []).find(cp => cp.date === dateStr);
+        const doneCount = c && c.blocks ? Object.values(c.blocks).filter(Boolean).length : 0;
+        completed.push(doneCount);
+      }
+
+      if (drillRoutineChartInstance) drillRoutineChartInstance.destroy();
+      drillRoutineChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'চাওয়া',
+              data: assigned,
+              backgroundColor: '#475569',
+              borderRadius: 4
+            },
+            {
+              label: 'সম্পন্ন',
+              data: completed,
+              backgroundColor: '#10b981',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#94a3b8' }
+            }
+          }
+        }
+      });
+    }
+
+    function sendRoutineToCurrentStudent() {
+      navigate('admin-routine');
+      setTimeout(() => {
+        selectAllRecipients(false);
+        const cb = document.getElementById(`rc-student-${drillStudentId}`);
+        if (cb) cb.checked = true;
+      }, 50);
+    }
+
+    async function resetStudentData() {
+      if (!confirm('আপনি কি নিশ্চিত যে এই শিক্ষার্থীর সকল পরীক্ষার নম্বর ও রুটিন ডেটা মুছে ফেলতে চান?')) return;
+      const student = state.profiles.find(p => p.id === drillStudentId);
+      if (student) {
+        student.marks = [];
+        student.routines = [];
+        student.completions = [];
+        await db_saveStudent(student);
+        alert('ডেটা সফলভাবে রিসেট করা হয়েছে!');
+        renderStudentAnalytics(drillStudentId);
+      }
+    }
+
+    async function deleteCurrentStudentProfile() {
+      if (!drillStudentId) return;
+      if (!confirm('আপনি কি নিশ্চিত যে এই শিক্ষার্থীর প্রোফাইল সম্পূর্ণভাবে মুছে ফেলতে চান?')) return;
+      await db_deleteStudent(drillStudentId);
+      alert('শিক্ষার্থীর প্রোফাইল সফলভাবে মুছে ফেলা হয়েছে!');
+      navigate('admin-home');
+    }
+
+    /* =========================================================================
+       14. ADMIN ROUTINE BUILDER
+       ========================================================================= */
+    async function renderAdminRoutineBuilder() {
+      const students = await db_listStudents();
+      const recList = document.getElementById('routine-recipients-checklist');
+      recList.innerHTML = '';
+
+      if (students.length === 0) {
+        recList.innerHTML = '<span style="font-size: 13px; color: var(--text-dim);">কোনো শিক্ষার্থী নেই</span>';
+      } else {
+        students.forEach(st => {
+          const label = document.createElement('label');
+          label.className = 'checkbox-wrap';
+          label.innerHTML = `
+            <input type="checkbox" id="rc-student-${st.id}" value="${st.id}" checked />
+            <span>${st.name}</span>
+          `;
+          recList.appendChild(label);
+        });
+      }
+
+      renderRoutineChapterChecklist();
+      renderPendingBlocksList();
+    }
+
+    function selectAllRecipients(checkAll) {
+      document.querySelectorAll('#routine-recipients-checklist input[type="checkbox"]').forEach(cb => {
+        cb.checked = checkAll;
+      });
+    }
+
+    function renderRoutineChapterChecklist() {
+      const subjectKey = document.getElementById('rb-subject-select').value;
+      const list = document.getElementById('rb-chapter-checklist');
+      list.innerHTML = '';
+
+      SYLLABUS.forEach((item, idx) => {
+        if (item[0] === subjectKey) {
+          const label = document.createElement('label');
+          label.className = 'checkbox-wrap';
+          label.style.fontSize = '12px';
+          label.innerHTML = `
+            <input type="checkbox" value="${idx}" class="rb-chap-cb" />
+            <span>${item[1]}</span>
+          `;
+          list.appendChild(label);
+        }
+      });
+    }
+
+    function addPendingBlock() {
+      const timeStart = document.getElementById('rb-time-start').value.trim() || '09:00 AM';
+      const timeEnd = document.getElementById('rb-time-end').value.trim() || '11:00 AM';
+      const subjectId = document.getElementById('rb-subject-select').value;
+      const title = document.getElementById('rb-title').value.trim();
+      const note = document.getElementById('rb-note').value.trim();
+
+      if (!title) {
+        alert('অনুগ্রহ করে ব্লকের একটি শিরোনাম দিন!');
+        return;
+      }
+
+      const selectedChapters = [];
+      document.querySelectorAll('.rb-chap-cb:checked').forEach(cb => {
+        selectedChapters.push(parseInt(cb.value));
+      });
+
+      pendingBlocks.push({
+        time: `${timeStart} - ${timeEnd}`,
+        subjectId,
+        chapters: selectedChapters,
+        title,
+        note
+      });
+
+      document.getElementById('rb-title').value = '';
+      document.getElementById('rb-note').value = '';
+      document.querySelectorAll('.rb-chap-cb').forEach(cb => cb.checked = false);
+
+      renderPendingBlocksList();
+    }
+
+    function renderPendingBlocksList() {
+      const list = document.getElementById('pending-blocks-list');
+      if (pendingBlocks.length === 0) {
+        list.innerHTML = '<div class="empty-state">কোনো পেন্ডিং ব্লক নেই। উপরের ফর্ম থেকে ব্লক যোগ করুন।</div>';
+        return;
+      }
+
+      list.innerHTML = pendingBlocks.map((b, idx) => {
+        const subName = PAPERS[b.subjectId] ? PAPERS[b.subjectId].name : b.subjectId;
+        const chapNames = b.chapters.map(cId => SYLLABUS[cId] ? SYLLABUS[cId][1] : '').join(', ');
+
+        return `
+          <div class="routine-block">
+            <div>
+              <span class="routine-time">${b.time}</span>
+              <div class="routine-title">${b.title}</div>
+              <div class="routine-subject">${subName} ${chapNames ? '• ' + chapNames : ''}</div>
+              ${b.note ? `<div class="routine-note">${b.note}</div>` : ''}
+            </div>
+            <div>
+              <button class="btn btn-danger btn-sm" onclick="removePendingBlock(${idx})">মুছুন</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function removePendingBlock(idx) {
+      pendingBlocks.splice(idx, 1);
+      renderPendingBlocksList();
+    }
+
+    async function publishRoutineBlocks() {
+      if (pendingBlocks.length === 0) {
+        alert('কোনো পেন্ডিং ব্লক নেই!');
+        return;
+      }
+
+      const recipientIds = [];
+      document.querySelectorAll('#routine-recipients-checklist input[type="checkbox"]:checked').forEach(cb => {
+        recipientIds.push(cb.value);
+      });
+
+      if (recipientIds.length === 0) {
+        alert('কমপক্ষে একজন শিক্ষার্থী নির্বাচন করুন!');
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      for (const id of recipientIds) {
+        const st = state.profiles.find(p => p.id === id);
+        if (st) {
+          if (!st.routines) st.routines = [];
+          let todayRout = st.routines.find(r => r.date === today);
+          if (!todayRout) {
+            todayRout = { date: today, blocks: [] };
+            st.routines.push(todayRout);
+          }
+          todayRout.blocks.push(...pendingBlocks);
+          await db_saveStudent(st);
+        }
+      }
+
+      pendingBlocks = [];
+      renderPendingBlocksList();
+      alert('রুটিন সফলভাবে নির্বাচিত শিক্ষার্থীদের প্রোফাইলে প্রকাশ করা হয়েছে!');
+    }
+
+    /* =========================================================================
+       15. MODAL & DROPDOWN HELPERS
+       ========================================================================= */
+    function openModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) el.classList.add('show');
+    }
+
+    function closeModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) el.classList.remove('show');
+    }
+
+    function openAdminLoginModal() {
+      document.getElementById('adm-login-email').value = 'rayanbinakter@gmail.com';
+      document.getElementById('adm-login-password').value = '';
+      openModal('modal-admin-login');
+    }
+
+    function toggleDropdown() {
+      const dd = document.getElementById('user-dropdown');
+      if (dd) dd.classList.toggle('show');
+    }
+
+    function closeDropdown() {
+      const dd = document.getElementById('user-dropdown');
+      if (dd) dd.classList.remove('show');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.avatar-wrapper')) {
+        closeDropdown();
+      }
+    });
+
+    /* =========================================================================
+       16. INITIALIZATION & EVENT WIRING
+       ========================================================================= */
+    function wireLoginEvents() {
+      const _bl = document.getElementById('btnLogin');
+      if (_bl) {
+        // Remove any old listeners by cloning the node
+        const fresh = _bl.cloneNode(true);
+        _bl.parentNode.replaceChild(fresh, _bl);
+        document.getElementById('btnLogin').addEventListener('click', attemptLogin);
+      }
+
+      const _pin = document.getElementById('li-pin');
+      if (_pin) {
+        _pin.addEventListener('keydown', e => {
+          if (e.key === 'Enter') attemptLogin();
+        });
+      }
+    }
+
+    function initApp() {
+      loadState();
+      showLogin();
+      wireLoginEvents();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+    });
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      initApp();
+    }
+  </script>
+</body>
+</html>

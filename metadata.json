@@ -1,0 +1,6 @@
+{
+  "name": "Medical Tracker BD",
+  "description": "Premium dark-themed medical college admission exam preparation tracker with predictive ranking, routine blocks, and bilingual English-Bengali analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

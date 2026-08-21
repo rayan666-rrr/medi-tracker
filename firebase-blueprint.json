@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "student": {
+      "title": "Student Profile",
+      "description": "Medical admission aspirant profile, exam marks, and study routine data",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique student identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Student full name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Student email address"
+        },
+        "pin": {
+          "type": "string",
+          "description": "Hashed 4-digit PIN for profile authentication"
+        },
+        "ssc": {
+          "type": "string",
+          "description": "SSC GPA"
+        },
+        "hsc": {
+          "type": "string",
+          "description": "HSC GPA"
+        },
+        "isSecondTimer": {
+          "type": "boolean",
+          "description": "Whether the student is a 2nd-timer applicant (-3 mark penalty)"
+        },
+        "streak": {
+          "type": "number",
+          "description": "Consecutive days active streak count"
+        },
+        "lastActive": {
+          "type": "string",
+          "description": "Last active ISO date string YYYY-MM-DD"
+        },
+        "marks": {
+          "type": "array",
+          "description": "Array of chapter exam score records"
+        },
+        "routines": {
+          "type": "array",
+          "description": "Custom or admin assigned daily routine blocks"
+        },
+        "completions": {
+          "type": "array",
+          "description": "Daily routine task completion records"
+        }
+      },
+      "required": ["id", "name", "email"]
+    }
+  },
+  "firestore": {
+    "/students/{uid}": {
+      "schema": "student",
+      "description": "Collection of student profiles, scores, and routines"
+    }
+  }
+}

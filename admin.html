@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="bn" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal | Medical Tracker BD</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-base: #08090f;
+      --bg-surface: #10121d;
+      --primary-indigo: #6b61ff;
+      --accent-teal: #22d3ee;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', 'Hind Siliguri', sans-serif;
+    }
+    body {
+      background-color: var(--bg-base);
+      color: #f1f5f9;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(107, 97, 255, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 25%, rgba(34, 211, 238, 0.08) 0%, transparent 35%);
+      background-attachment: fixed;
+    }
+    .glass-card {
+      background: rgba(16, 18, 29, 0.82);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 22px;
+    }
+    .btn-gradient {
+      background: linear-gradient(135deg, #6b61ff 0%, #4f46e5 100%);
+      box-shadow: 0 4px 15px rgba(107, 97, 255, 0.35);
+    }
+    .btn-gradient:hover {
+      background: linear-gradient(135deg, #7c73ff 0%, #5b52f0 100%);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col min-h-screen">
+  
+  <!-- Header -->
+  <header class="max-w-6xl w-full mx-auto flex items-center justify-between pb-6 border-b border-white/5">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-teal-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+        <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+          Admin Portal <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Teacher Edition</span>
+        </h1>
+        <p class="text-xs text-slate-400">Medical Admission Tracker • Routine Broadcast & Management</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <div id="sync-status" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-white/10 text-xs text-slate-300">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="sync-text">Firebase Live</span>
+      </div>
+      <a href="/index.html" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Student App
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl w-full mx-auto mt-8 flex-1">
+    
+    <!-- PIN Verification Screen -->
+    <div id="pin-section" class="max-w-md mx-auto glass-card p-8 text-center mt-12 shadow-2xl">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center mb-5 text-indigo-400">
+        <i data-lucide="lock" class="w-7 h-7"></i>
+      </div>
+      <h2 class="text-lg font-bold text-white mb-1">Teacher PIN Access</h2>
+      <p class="text-xs text-slate-400 mb-6">Enter the 6-digit admin security PIN to broadcast routines.</p>
+      
+      <form id="pin-form" onsubmit="handlePinSubmit(event)" class="space-y-4">
+        <input 
+          type="password" 
+          id="admin-pin-input" 
+          maxlength="6" 
+          placeholder="••••••" 
+          class="w-full text-center text-2xl tracking-[0.4em] font-mono py-3.5 rounded-xl bg-slate-950/80 border border-white/10 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+          required
+        />
+        <button type="submit" class="w-full py-3 rounded-xl btn-gradient text-white text-sm font-bold flex items-center justify-center gap-2">
+          <i data-lucide="key" class="w-4 h-4"></i> Unlock Admin Panel
+        </button>
+        <p class="text-[11px] text-slate-500">Default Teacher Security PIN: <code class="text-indigo-400 font-mono">123456</code> or <code class="text-indigo-400 font-mono">1234</code></p>
+      </form>
+    </div>
+
+    <!-- Admin Dashboard View (Hidden until PIN verified) -->
+    <div id="admin-view" class="hidden space-y-6">
+      
+      <!-- Top Broadcast Card -->
+      <div class="glass-card p-6 border-indigo-500/30">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-400/20 text-teal-300 border border-teal-400/30">Firestore Realtime Broadcast</span>
+              <span class="text-xs text-slate-400">• Latency &lt; 1s</span>
+            </div>
+            <h2 class="text-lg font-bold text-white">Broadcast Study Routine to All Students</h2>
+            <p class="text-xs text-slate-400">Pushed routines sync instantly to the student app via the <code class="text-indigo-300">/routines/{date}</code> collection.</p>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <input type="date" id="broadcast-date" class="px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <button onclick="publishRoutineToFirebase()" class="px-5 py-2.5 rounded-xl btn-gradient text-white text-xs font-bold flex items-center gap-2">
+              <i data-lucide="radio" class="w-4 h-4 animate-pulse"></i> Publish Routine Live
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Template Selector & Editor Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Templates -->
+        <div class="glass-card p-5 space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4 text-indigo-400"></i> Pre-Built Templates
+          </h3>
+          <p class="text-xs text-slate-400">Select a syllabus-aligned blueprint to load into the editor:</p>
+          
+          <div class="space-y-2.5">
+            <button onclick="loadTemplate('Weak-Chapter Filler')" id="tpl-btn-weak" class="w-full text-left p-3.5 rounded-xl border bg-indigo-500/20 border-indigo-500 text-white transition">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-indigo-300">Weak-Chapter Filler</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200">Recommended</span>
+              </div>
+              <p class="text-[11px] text-slate-300">দুর্বল অধ্যায় ফোকাস সপ্তাহ — Organic Chemistry, Circulation, Mechanics focus.</p>
+            </button>
+
+            <button onclick="loadTemplate('Foundation Week')" id="tpl-btn-foundation" class="w-full text-left p-3.5 rounded-xl border bg-slate-900 border-white/10 text-slate-400 hover:text-white transition">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-200">Foundation Week</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-400">Core Theory</span>
+              </div>
+              <p class="text-[11px] text-slate-400">মৌলিক ভিত্তি সপ্তাহ — Comprehensive 8-paper revision.</p>
+            </button>
+
+            <button onclick="loadTemplate('Mock-Heavy Final')" id="tpl-btn-mock" class="w-full text-left p-3.5 rounded-xl border bg-slate-900 border-white/10 text-slate-400 hover:text-white transition">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-200">Mock-Heavy Final</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Exam Mode</span>
+              </div>
+              <p class="text-[11px] text-slate-400">মডেল টেস্ট ও ফাইনাল রিভিশন — Daily 100-mark OMR MBBS simulations.</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: JSON Routine Editor -->
+        <div class="lg:col-span-2 glass-card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="code" class="w-4 h-4 text-teal-400"></i> Weekly Routine JSON Structure
+            </h3>
+            <span class="text-[11px] text-slate-400">Editable 7-Day Matrix (Mon → Sun)</span>
+          </div>
+
+          <textarea 
+            id="routine-json-editor" 
+            rows="16" 
+            class="w-full p-4 rounded-xl bg-slate-950 border border-white/10 text-emerald-400 font-mono text-xs focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 leading-relaxed resize-y"
+          ></textarea>
+
+          <div class="flex items-center justify-between pt-2">
+            <p class="text-[11px] text-slate-400">Directly edit block titles, notes, subjects, or timings.</p>
+            <div class="flex gap-2">
+              <button onclick="formatJSON()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold">
+                Format JSON
+              </button>
+              <button onclick="publishRoutineToFirebase()" class="px-4 py-1.5 rounded-lg btn-gradient text-white text-xs font-bold flex items-center gap-1.5">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-900/95 border border-indigo-500/50 shadow-2xl text-xs text-white">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-teal-400"></i>
+    <span id="toast-msg">Operation successful</span>
+  </div>
+
+  <!-- Firebase Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Firebase configuration from firebase-applet-config.json
+    const firebaseConfig = {
+      projectId: "linen-math-v6shk",
+      appId: "1:495265888515:web:eb3051b5dccdde9962d136",
+      apiKey: "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
+      authDomain: "linen-math-v6shk.firebaseapp.com",
+      firestoreDatabaseId: "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    // Make global for inline handlers
+    window.db = db;
+    window.auth = auth;
+    window.googleProvider = googleProvider;
+    window.signInWithPopup = signInWithPopup;
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("Admin logged into Firebase:", user.email || user.uid);
+      }
+    });
+
+    // Default template data
+    const TEMPLATES = {
+      'Weak-Chapter Filler': {
+        name: 'Weak-Chapter Filler',
+        schedule: {
+          mon: [
+            { id: 'wf_m1', time: '08:00 AM - 10:00 AM', subject: 'Biology 2 (প্রাণিবিজ্ঞান)', paperId: 'bio2', chapterTitle: 'মানব পরিপাকতন্ত্র: রক্ত ও সঞ্চালন', title: 'দুর্বল টপিক: রক্ত সংবহন ও ইসিজি রিভিশন', note: 'বিগত ৫ বছরের মেডিকেল প্রশ্ন ও ব্যাখ্যাসহ রিভিশন করুন (৩৩৬টি প্রশ্ন)।', rate7d: 85, completed: false },
+            { id: 'wf_m2', time: '11:00 AM - 01:00 PM', subject: 'Chemistry 2 (রসায়ন ২য়)', paperId: 'chem2', chapterTitle: 'জৈব রসায়ন (Organic Chemistry)', title: 'অ্যারোমেটিক যৌগ ও শনাক্তকারী বিক্রিয়া প্র্যাকটিস', note: 'বেঞ্জিন ও সংশ্লিষ্ট বিক্রিয়াগুলোর ৫০টি এমসিকিউ সলভ করুন।', rate7d: 72, completed: false },
+            { id: 'wf_m3', time: '03:30 PM - 05:00 PM', subject: 'Physics 1 (পদার্থ ১ম)', paperId: 'phy1', chapterTitle: 'নিউটনীয় বলবিদ্যা (Mechanics)', title: 'ভরবেগ সংরক্ষণ ও ব্যাংকিং কোণের ম্যাথ', note: 'ইসহাক স্যারের বইয়ের অনুশীলনী ও বোর্ড প্রশ্ন প্র্যাকটিস।', rate7d: 65, completed: false },
+            { id: 'wf_m4', time: '08:00 PM - 09:30 PM', subject: 'English & GK', paperId: 'eng', chapterTitle: 'English Vocabulary & GK Bangladesh', title: 'ডেইলি ৫০টি ইংরেজি ও ২৫টি সাধারণ জ্ঞান প্রশ্ন', note: 'ভুল হওয়া প্রশ্নগুলো আলাদা খাতায় নোট করুন।', rate7d: 80, completed: false }
+          ],
+          tue: [
+            { id: 'wf_t1', time: '08:00 AM - 10:00 AM', subject: 'Chemistry 1 (রসায়ন ১ম)', paperId: 'chem1', chapterTitle: 'মৌলের পর্যায়বৃত্ত ধর্ম ও বন্ধন', title: 'দুর্বল বিষয়: আয়নিকরণ শক্তির ব্যতিক্রম ক্রম', note: 'দ্বিতীয় ও তৃতীয় পর্যায়ের মৌলসমূহের সুনির্দিষ্ট ব্যতিক্রম চার্ট তৈরি।', rate7d: 68, completed: false },
+            { id: 'wf_t2', time: '11:00 AM - 01:00 PM', subject: 'Biology 1 (উদ্ভিদবিজ্ঞান)', paperId: 'bio1', chapterTitle: 'কোষ বিভাজন', title: 'মায়োসিস-১ প্রোফেজ-১ এর ৫টি উপপর্যায় ড্রিল', note: 'লেপ্টোটিন থেকে ডায়াকাইনেসিস পর্যন্ত সূক্ষ্ম পার্থক্য মুখস্থকরণ।', rate7d: 75, completed: false },
+            { id: 'wf_t3', time: '03:30 PM - 05:00 PM', subject: 'Physics 2 (পদার্থ ২য়)', paperId: 'phy2', chapterTitle: 'চল তড়িৎ (Current Electricity)', title: 'কার্শফের সূত্র, হুইটস্টোন ব্রিজ ও সান্ট ম্যাথ', note: 'মেডিকেল টাইপ সার্কিট সমাধান।', rate7d: 70, completed: false },
+            { id: 'wf_t4', time: '08:00 PM - 09:30 PM', subject: 'English (ইংরেজি)', paperId: 'eng', chapterTitle: 'English Sentence Correction', title: 'Dangling Modifiers & Parallelism', note: 'কনফিউজিং রুলস সমাধান।', rate7d: 82, completed: false }
+          ],
+          wed: [
+            { id: 'wf_w1', time: '08:00 AM - 10:00 AM', subject: 'Biology 2 (প্রাণিবিজ্ঞান)', paperId: 'bio2', chapterTitle: 'জিনতত্ত্ব ও বিবর্তন', title: 'মেন্ডেলের সূত্রের ব্যতিক্রম ও এপিস্ট্যাসিস অনুপাত', note: '৯:৭, ১৩:৩, ১২:৩:১ এবং রক্তগ্রুপ লিঙ্কেজ প্র্যাকটিস।', rate7d: 62, completed: false },
+            { id: 'wf_w2', time: '11:00 AM - 01:00 PM', subject: 'Chemistry 2 (রসায়ন ২য়)', paperId: 'chem2', chapterTitle: 'তড়িৎ রসায়ন', title: 'নার্নস্ট সমীকরণ ও ইলেক্ট্রোকেমিক্যাল সিরিজ', note: 'কোন ধাতু কাকে প্রতিস্থাপন করবে সেই নিয়মাবলী।', rate7d: 74, completed: false }
+          ],
+          thu: [
+            { id: 'wf_th1', time: '08:00 AM - 10:00 AM', subject: 'Chemistry 2 (রসায়ন ২য়)', paperId: 'chem2', chapterTitle: 'জৈব রসায়ন (Organic Chemistry)', title: 'অ্যালকোহল, অ্যালডিহাইড ও কিটোন শনাক্তকরণ', note: 'লুকাস বিকারক, টলেন বিকারক ও ফেহলিং দ্রবণ পরীক্ষা।', rate7d: 65, completed: false },
+            { id: 'wf_th2', time: '11:00 AM - 01:00 PM', subject: 'Biology 2 (প্রাণিবিজ্ঞান)', paperId: 'bio2', chapterTitle: 'মানবদেহের প্রতিরক্ষা (Immunity)', title: 'অ্যান্টিবডির গঠন ও ভ্যাকসিন', note: 'টিকা, ভ্যাকসিন ও প্রতিরক্ষা স্তর চার্ট।', rate7d: 84, completed: false }
+          ],
+          fri: [
+            { id: 'wf_f1', time: '08:00 AM - 10:00 AM', subject: 'Physics 1 (পদার্থ ১ম)', paperId: 'phy1', chapterTitle: 'আদর্শ গ্যাস ও গতিতত্ত্ব', title: 'আরএমএস বেগ, গড় মুক্ত পথ ও আপেক্ষিক আর্দ্রতা', note: 'গ্লেসিয়ার ও রেনো সূত্রের ম্যাথ।', rate7d: 80, completed: false },
+            { id: 'wf_f2', time: '11:00 AM - 01:00 PM', subject: 'Chemistry 1 (রসায়ন ১ম)', paperId: 'chem1', chapterTitle: 'পরিবেশ রসায়ন', title: 'গ্রিনহাউস গ্যাস, সিওডি/বিওডি ও অম্লবৃষ্টি', note: 'পরিবেশের ক্ষতিকারক প্রভাবক তালিকা।', rate7d: 88, completed: false }
+          ],
+          sat: [
+            { id: 'wf_s1', time: '08:00 AM - 10:00 AM', subject: 'Biology 2 (প্রাণিবিজ্ঞান)', paperId: 'bio2', chapterTitle: 'মানব পরিপাকতন্ত্র: সমন্বয় ও নিয়ন্ত্রণ', title: 'মস্তিষ্কের অংশ ও ১২ জোড়া ক্রেনিয়াল নার্ভ', note: 'নার্ভের নাম, প্রকার ও বিস্তার ছক।', rate7d: 70, completed: false }
+          ],
+          sun: [
+            { id: 'wf_su1', time: '08:00 AM - 10:30 AM', subject: 'Weekly Weak-Chapter Mock', paperId: 'chem2', chapterTitle: 'Targeted Weak Chapters', title: '১০০ নম্বরের দুর্বল অধ্যায়ভিত্তিক এক্সক্লুসিভ এক্সাম', note: 'জৈব রসায়ন, সংবহন, গতিবিদ্যা ও গ্রামারের ওপর টেস্ট।', rate7d: 92, completed: false }
+          ]
+        }
+      },
+      'Foundation Week': {
+        name: 'Foundation Week',
+        schedule: {
+          mon: [
+            { id: 'fw_m1', time: '08:00 AM - 10:00 AM', subject: 'Biology 1 (উদ্ভিদবিজ্ঞান)', paperId: 'bio1', chapterTitle: 'কোষ ও এর গঠন (Cell Biology)', title: 'কোষপ্রাচীর, প্লাজমামেমব্রেন ও অঙ্গাণুসমূহ', note: 'আবুল হাসান স্যারের বই রিভিশন।', rate7d: 88, completed: false },
+            { id: 'fw_m2', time: '11:00 AM - 01:00 PM', subject: 'Chemistry 1 (রসায়ন ১ম)', paperId: 'chem1', chapterTitle: 'গুণগত রসায়ন', title: 'কোয়ান্টাম সংখ্যা, বর্ণালী ও দ্রাব্যতা নীতি', note: 'হাজারী-নাগ স্যারের প্রশ্নব্যাংক প্র্যাকটিস।', rate7d: 82, completed: false }
+          ]
+        }
+      },
+      'Mock-Heavy Final': {
+        name: 'Mock-Heavy Final',
+        schedule: {
+          mon: [
+            { id: 'mf_m1', time: '07:30 AM - 09:00 AM', subject: 'Full Model Test 1', paperId: 'bio1', chapterTitle: '100 Marks MBBS Simulation', title: 'সকাল বেলার পূর্ণাঙ্গ ১০০ নম্বরের মেডিকেল মডেল টেস্ট', note: 'ঘড়ির কাঁটা ধরে ৪৫ মিনিটে ১০০টি এমসিকিউ দাগানো।', rate7d: 95, completed: false }
+          ]
+        }
+      }
+    };
+    window.TEMPLATES = TEMPLATES;
+
+    window.handlePinSubmit = function(e) {
+      e.preventDefault();
+      const pin = document.getElementById('admin-pin-input').value.trim();
+      if (pin === '123456' || pin === '1234') {
+        document.getElementById('pin-section').classList.add('hidden');
+        document.getElementById('admin-view').classList.remove('hidden');
+        document.getElementById('broadcast-date').value = new Date().toISOString().split('T')[0];
+        loadTemplate('Weak-Chapter Filler');
+        showToast('Admin access verified.');
+        lucide.createIcons();
+      } else {
+        alert('Invalid Teacher Security PIN! (Use 123456 or 1234)');
+      }
+    };
+
+    window.loadTemplate = function(tplName) {
+      const tpl = TEMPLATES[tplName] || TEMPLATES['Weak-Chapter Filler'];
+      document.getElementById('routine-json-editor').value = JSON.stringify(tpl.schedule, null, 2);
+      
+      // Update highlights
+      ['weak', 'foundation', 'mock'].forEach(id => {
+        const btn = document.getElementById(`tpl-btn-${id}`);
+        if (btn) {
+          btn.className = "w-full text-left p-3.5 rounded-xl border bg-slate-900 border-white/10 text-slate-400 hover:text-white transition";
+        }
+      });
+      if (tplName === 'Weak-Chapter Filler') document.getElementById('tpl-btn-weak').className = "w-full text-left p-3.5 rounded-xl border bg-indigo-500/20 border-indigo-500 text-white transition";
+      if (tplName === 'Foundation Week') document.getElementById('tpl-btn-foundation').className = "w-full text-left p-3.5 rounded-xl border bg-indigo-500/20 border-indigo-500 text-white transition";
+      if (tplName === 'Mock-Heavy Final') document.getElementById('tpl-btn-mock').className = "w-full text-left p-3.5 rounded-xl border bg-emerald-500/20 border-emerald-500 text-white transition";
+    };
+
+    window.formatJSON = function() {
+      try {
+        const val = JSON.parse(document.getElementById('routine-json-editor').value);
+        document.getElementById('routine-json-editor').value = JSON.stringify(val, null, 2);
+        showToast('JSON formatted successfully.');
+      } catch (err) {
+        alert('Invalid JSON syntax: ' + err.message);
+      }
+    };
+
+    window.publishRoutineToFirebase = async function() {
+      try {
+        const raw = document.getElementById('routine-json-editor').value;
+        const parsed = JSON.parse(raw);
+        const dateStr = document.getElementById('broadcast-date').value || new Date().toISOString().split('T')[0];
+
+        const payload = {
+          date: dateStr,
+          schedule: parsed,
+          updatedAt: new Date().toISOString()
+        };
+
+        // Write to date collection and current collection
+        await setDoc(doc(db, 'routines', dateStr), payload);
+        await setDoc(doc(db, 'routines', 'current'), payload);
+
+        showToast(`Study routine published live for ${dateStr}!`);
+      } catch (err) {
+        console.error('Publish error:', err);
+        alert('Failed to publish routine: ' + err.message);
+      }
+    };
+
+    window.showToast = function(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    };
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
