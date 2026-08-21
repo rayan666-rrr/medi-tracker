@@ -1,7 +1,26 @@
 rules_version = '2';
+
+// ⚠️ DEVELOPMENT RULES — fully open. Anyone with the public web API key can read,
+// modify, or delete every student record. This is acceptable ONLY while testing.
+// Locking this down is the next planned task (see NEXT-STEPS.md, step 3), and must
+// happen before real students use the app.
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Student profiles, marks, routines and completions.
+    // `read` covers both get() and list() — the connectivity probe issues a
+    // limit(1) list query against this collection, so `list` must be allowed.
     match /students/{uid} {
+      allow read, write: if true;
+    }
+
+    // Routine broadcasts written by admin.html:
+    //   setDoc(doc(db, 'routines', <YYYY-MM-DD>))
+    //   setDoc(doc(db, 'routines', 'current'))
+    // This collection previously had NO rule at all, which means Firestore was
+    // denying every broadcast by default — the teacher portal was failing silently.
+    match /routines/{docId} {
       allow read, write: if true;
     }
   }
