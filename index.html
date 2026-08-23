@@ -1383,7 +1383,8 @@
       query, where, limit
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import {
-      getAuth, signInAnonymously, onAuthStateChanged
+      getAuth, signInAnonymously, onAuthStateChanged,
+      GoogleAuthProvider, signInWithPopup
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     // Firebase was provisioned by AI Studio, which OWNS firebase-applet-config.json
@@ -1437,41 +1438,28 @@
         const db  = getFirestore(app, FIRESTORE_DB_ID);
 
         // -------------------------------------------------------------------
-        // Anonymous sign-in.
+        // Firebase sign-in.
         //
-        // The rules deployed on this database require request.auth != null
-        // (they define isSignedIn() and check it). This app authenticates
-        // students with an email + 4-digit PIN stored in their own document,
-        // which Firestore knows nothing about — so request.auth was always null
-        // and every request was denied with 403.
+        // The deployed ruleset requires request.auth != null. This app signs
+        // students in with an email + 4-digit PIN stored in their own document,
+        // which Firestore cannot see, so request.auth was always null and every
+        // read returned 403.
         //
-        // Signing in anonymously gives the browser a real Firebase auth token,
-        // which satisfies isSignedIn() WITHOUT changing any rules. That matters
-        // because AI Studio-provisioned projects frequently do not grant the
-        // creator permission to deploy rules at all.
+        // We cannot change the rules and we cannot enable Anonymous auth: this
+        // project was provisioned by AI Studio, which did not grant the creator
+        // the IAM permissions for either ("ask a project owner for the necessary
+        // permission"). GOOGLE sign-in, however, is already enabled — so that is
+        // the one lever available, and it is what admin.html already uses.
         //
-        // If Anonymous auth is not enabled in the Firebase console this throws
-        // auth/operation-not-allowed, which is reported clearly below.
+        // Order of attempts:
+        //   1. Anonymous  — silent, no user interaction. Works if ever enabled.
+        //   2. Google     — requires one click, only on an explicit user gesture.
+        //                   Popups are blocked without a gesture, so this is NOT
+        //                   attempted during boot; window.MTDBSignIn() triggers it.
         // -------------------------------------------------------------------
-        const auth = getAuth(app);
-        let authUid = null;
-        try {
-          const cred = await signInAnonymously(auth);
-          authUid = cred && cred.user ? cred.user.uid : null;
-          console.log('%c[MTDB] 🔑 Signed in anonymously, uid=' + authUid, 'color:#818cf8');
-        } catch (authErr) {
-          // Not fatal on its own: the rules might allow unauthenticated access.
-          // Let the probe below decide, but keep the reason for the report.
-          window.MTDBAuthError = authErr;
-          console.warn('[MTDB] Anonymous sign-in failed (' + (authErr.code || authErr.message) + ') — trying unauthenticated');
-        }
-        window.MTDBUid = authUid;
-
-        // Connectivity probe. initializeApp() never throws on a bad network or bad
-        // rules, so an actual read is the only honest test that cloud sync is live.
-        await getDocs(query(collection(db, 'students'), limit(1)));
-
-        window.MTDB = {
+        // Shared Firestore API surface, used by both the boot path and the
+        // interactive Google sign-in path.
+        const buildApi = () => ({
           getByEmail: async (email) => {
             const s = await getDocs(query(collection(db, 'students'), where('email', '==', email), limit(1)));
             return s.empty ? null : s.docs[0].data();
@@ -1480,7 +1468,50 @@
           save:   async (student) => { await setDoc(doc(db, 'students', student.id), student, { merge: true }); },
           list:   async ()        => (await getDocs(collection(db, 'students'))).docs.map(d => d.data()),
           remove: async (uid)     => { await deleteDoc(doc(db, 'students', uid)); }
+        });
+
+        const auth = getAuth(app);
+        let authUid = null;
+
+        try {
+          const cred = await signInAnonymously(auth);
+          authUid = cred && cred.user ? cred.user.uid : null;
+          console.log('%c[MTDB] 🔑 Signed in anonymously, uid=' + authUid, 'color:#818cf8');
+        } catch (authErr) {
+          window.MTDBAuthError = authErr;
+          console.warn('[MTDB] Anonymous sign-in unavailable (' + (authErr.code || authErr.message) + ')');
+        }
+        window.MTDBUid = authUid;
+
+        // Interactive Google sign-in, called from a click handler in the app.
+        // Resolves true when Firestore becomes reachable afterwards.
+        window.MTDBSignIn = async () => {
+          try {
+            const provider = new GoogleAuthProvider();
+            const res = await signInWithPopup(auth, provider);
+            window.MTDBUid = res.user.uid;
+            console.log('%c[MTDB] 🔑 Signed in with Google: ' + res.user.email, 'color:#34d399');
+            await getDocs(query(collection(db, 'students'), limit(1)));
+            window.MTDB = buildApi();
+            window.MTDBError = null;
+            return true;
+          } catch (e) {
+            window.MTDBError = e;
+            console.warn('[MTDB] Google sign-in failed:', e.code || e.message, e);
+            return false;
+          }
         };
+
+        // Restore an existing Google session on reload without a second popup.
+        onAuthStateChanged(auth, (u) => {
+          if (u) window.MTDBUid = u.uid;
+        });
+
+        // Connectivity probe. initializeApp() never throws on a bad network or bad
+        // rules, so an actual read is the only honest test that cloud sync is live.
+        await getDocs(query(collection(db, 'students'), limit(1)));
+
+        window.MTDB = buildApi();
         console.log('%c[MTDB] ✅ Firestore connected → ' + FIRESTORE_DB_ID + '  (config from ' + source + ')', 'color:#34d399;font-weight:bold');
         return true;
       } catch (err) {
@@ -3980,14 +4011,34 @@
         badge.onclick = null;
         badge.style.cursor = 'default';
       } else {
-        badge.textContent = '📴 অফলাইন মোড';
+        // The deployed rules demand a signed-in user, and neither the rules nor
+        // Anonymous auth can be changed on this project. Google sign-in IS
+        // enabled, so offer it — but only from a real click, since popups are
+        // blocked otherwise.
+        badge.textContent = '🔒 সিঙ্ক চালু করতে ক্লিক করুন';
         badge.style.color = '#fbbf24';
         badge.style.cursor = 'pointer';
-        badge.title = 'Offline — click for the reason';
-        badge.onclick = () => {
-          const err = window.MTDBError;
-          showToast(err && err.code ? ('অফলাইন: ' + err.code) : 'অফলাইন মোড — কনসোল দেখুন');
-          if (err) console.warn('[MTDB] Offline reason:', err);
+        badge.title = 'Click to sign in with Google and enable cloud sync';
+        badge.onclick = async () => {
+          if (!window.MTDBSignIn) {
+            const err = window.MTDBError;
+            showToast(err && err.code ? ('অফলাইন: ' + err.code) : 'অফলাইন মোড — কনসোল দেখুন');
+            return;
+          }
+          badge.textContent = '⏳ সাইন-ইন হচ্ছে…';
+          const ok = await window.MTDBSignIn();
+          if (ok) {
+            isFirestoreActive = true;
+            updateSyncBadge();
+            showToast('ক্লাউড সিঙ্ক চালু হয়েছে ✓');
+            try { await db_listStudents(); } catch (e) {}
+            const cur = getCurrentStudent && getCurrentStudent();
+            if (cur) { try { await db_saveStudent(cur); } catch (e) {} }
+          } else {
+            updateSyncBadge();
+            const err = window.MTDBError;
+            showToast(err && err.code ? ('সাইন-ইন ব্যর্থ: ' + err.code) : 'সাইন-ইন ব্যর্থ');
+          }
         };
       }
     }
