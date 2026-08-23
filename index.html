@@ -1382,6 +1382,9 @@
       getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
       query, where, limit
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     // Firebase was provisioned by AI Studio, which OWNS firebase-applet-config.json
     // and may rotate or re-provision it. So we read that file at runtime instead of
@@ -1433,6 +1436,37 @@
         const app = initializeApp(firebaseConfig);
         const db  = getFirestore(app, FIRESTORE_DB_ID);
 
+        // -------------------------------------------------------------------
+        // Anonymous sign-in.
+        //
+        // The rules deployed on this database require request.auth != null
+        // (they define isSignedIn() and check it). This app authenticates
+        // students with an email + 4-digit PIN stored in their own document,
+        // which Firestore knows nothing about — so request.auth was always null
+        // and every request was denied with 403.
+        //
+        // Signing in anonymously gives the browser a real Firebase auth token,
+        // which satisfies isSignedIn() WITHOUT changing any rules. That matters
+        // because AI Studio-provisioned projects frequently do not grant the
+        // creator permission to deploy rules at all.
+        //
+        // If Anonymous auth is not enabled in the Firebase console this throws
+        // auth/operation-not-allowed, which is reported clearly below.
+        // -------------------------------------------------------------------
+        const auth = getAuth(app);
+        let authUid = null;
+        try {
+          const cred = await signInAnonymously(auth);
+          authUid = cred && cred.user ? cred.user.uid : null;
+          console.log('%c[MTDB] 🔑 Signed in anonymously, uid=' + authUid, 'color:#818cf8');
+        } catch (authErr) {
+          // Not fatal on its own: the rules might allow unauthenticated access.
+          // Let the probe below decide, but keep the reason for the report.
+          window.MTDBAuthError = authErr;
+          console.warn('[MTDB] Anonymous sign-in failed (' + (authErr.code || authErr.message) + ') — trying unauthenticated');
+        }
+        window.MTDBUid = authUid;
+
         // Connectivity probe. initializeApp() never throws on a bad network or bad
         // rules, so an actual read is the only honest test that cloud sync is live.
         await getDocs(query(collection(db, 'students'), limit(1)));
@@ -1459,8 +1493,20 @@
         const msg  = err && err.message ? err.message : String(err);
         let cause;
         if (code.includes('permission-denied')) {
-          cause = 'PERMISSION DENIED → firestore.rules is blocking reads of /students. '
-                + 'Deploy rules that allow this collection.';
+          const ae = window.MTDBAuthError;
+          if (ae && String(ae.code || '').includes('operation-not-allowed')) {
+            cause = 'PERMISSION DENIED + ANONYMOUS AUTH DISABLED → the deployed rules require '
+                  + 'a signed-in user, and Anonymous sign-in is turned OFF. FIX: Firebase console → '
+                  + 'Authentication → Sign-in method → enable Anonymous. No rules change needed.';
+          } else if (!window.MTDBUid) {
+            cause = 'PERMISSION DENIED and not signed in → the deployed rules require '
+                  + 'request.auth != null. Enable Anonymous sign-in in the Firebase console '
+                  + '(Authentication → Sign-in method → Anonymous).';
+          } else {
+            cause = 'PERMISSION DENIED while signed in as uid=' + window.MTDBUid + ' → the deployed '
+                  + 'rules reject even authenticated users for /students (they may require an admin '
+                  + 'document or a specific email). The ruleset itself needs changing.';
+          }
         } else if (code.includes('not-found') || msg.includes('does not exist')) {
           cause = 'DATABASE NOT FOUND → the database "' + FIRESTORE_DB_ID + '" does not exist '
                 + 'in project ' + cfg.projectId + '. The id came from ' + source + '. '
