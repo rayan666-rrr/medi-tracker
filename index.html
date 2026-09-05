@@ -10,10 +10,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Firebase Compat SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
   <style>
     :root {
       --bg: #090a0f;
@@ -652,6 +648,7 @@
         <div class="brand-icon">M</div>
         <span>Medical Tracker BD</span>
       </div>
+      <span id="sync-badge" style="font-size:11px;font-weight:600;color:#94a3b8;">…</span>
 
       <!-- Student Navigation -->
       <div class="nav-center" id="student-nav-center">
@@ -702,6 +699,23 @@
           <p style="color: var(--text-muted); font-size: 13px;">শিক্ষার্থী লগইন</p>
         </div>
 
+        <!-- Primary Google Sign-In button -->
+        <button type="button" id="btnGoogleSignIn" class="btn btn-primary btn-block" onclick="handleGoogleAuthLogin()" style="padding: 12px; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.06);">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <span>Google দিয়ে সাইন ইন করুন</span>
+        </button>
+
+        <div style="display: flex; align-items: center; margin-bottom: 20px; color: var(--text-dim); font-size: 12px;">
+          <div style="flex: 1; height: 1px; background: var(--border);"></div>
+          <span style="padding: 0 10px;">অথবা ইমেইল ও PIN দিয়ে</span>
+          <div style="flex: 1; height: 1px; background: var(--border);"></div>
+        </div>
+
         <form id="student-login-form" onsubmit="event.preventDefault(); attemptLogin();">
           <div class="form-group">
             <label class="form-label" for="li-email">ইমেইল</label>
@@ -732,8 +746,8 @@
             />
           </div>
 
-          <button type="button" id="btnLogin" class="btn btn-primary btn-block" style="padding: 12px; font-size: 15px; font-weight: 600;">
-            প্রবেশ করো
+          <button type="button" id="btnLogin" class="btn btn-secondary btn-block" style="padding: 11px; font-size: 14px; font-weight: 600;">
+            প্রবেশ করো (PIN)
           </button>
 
           <!-- Inline error / signup prompt -->
@@ -921,8 +935,8 @@
          VIEW 4: CHAPTER ENTRY MODAL / VIEW
          ========================================================================= -->
     <div class="modal-backdrop" id="chapter-entry-modal">
-      <div class="modal-card">
-        <div class="modal-header">
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header" style="margin-bottom: 14px;">
           <div>
             <span style="font-size: 12px; color: var(--accent); font-weight: 600;" id="entry-paper-name">বায়োলজি</span>
             <h3 class="modal-title" id="entry-chapter-title">কোষ ও এর গঠন</h3>
@@ -930,37 +944,51 @@
           <button class="close-btn" onclick="closeChapterModal()">✕</button>
         </div>
 
+        <!-- Chapter Past Attempts History Section -->
+        <div id="chapter-history-section" style="margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span>📜 অতীত প্রচেষ্টা সমূহ</span>
+            <span id="chapter-history-count" style="font-size: 11px; color: var(--accent); font-weight: 600;"></span>
+          </div>
+          <div id="chapter-history-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 170px; overflow-y: auto;">
+            <!-- Populated via renderChapterHistoryList() -->
+          </div>
+        </div>
+
+        <!-- Chapter Entry Form -->
         <form id="chapter-entry-form" onsubmit="handleSaveChapterMark(event)">
-          <div class="form-group">
-            <label class="form-label">তারিখ</label>
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">✍️ নতুন এন্ট্রি / নতুন চেষ্টা</div>
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-size: 12px;">তারিখ</label>
             <input type="date" id="entry-date" class="form-input" required />
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">মোট MCQ (Total MCQ)</label>
-              <input type="number" id="entry-total" class="form-input" min="1" value="25" oninput="calculateSkipped()" required />
+          <div class="form-row" style="margin-bottom: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 12px;">Total MCQ:</label>
+              <input type="number" id="entry-total" class="form-input" min="1" value="25" oninput="updateChapterLivePreview()" required />
             </div>
-            <div class="form-group">
-              <label class="form-label">সঠিক (Correct)</label>
-              <input type="number" id="entry-correct" class="form-input" min="0" placeholder="০" oninput="calculateSkipped()" required />
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 12px;">Correct:</label>
+              <input type="number" id="entry-correct" class="form-input" min="0" placeholder="০" oninput="updateChapterLivePreview()" required />
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">ভুল (Wrong)</label>
-              <input type="number" id="entry-wrong" class="form-input" min="0" placeholder="০" oninput="calculateSkipped()" required />
+          <div class="form-row" style="margin-bottom: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 12px;">Wrong:</label>
+              <input type="number" id="entry-wrong" class="form-input" min="0" placeholder="০" oninput="updateChapterLivePreview()" required />
             </div>
-            <div class="form-group">
-              <label class="form-label">স্কিপড (Skipped)</label>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 12px;">Skipped:</label>
               <input type="number" id="entry-skipped" class="form-input" min="0" placeholder="০" readonly style="background: var(--bg); opacity: 0.85;" />
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">ভুলের ধরন (ঐচ্ছিক)</label>
+          <div class="form-row" style="margin-bottom: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 12px;">ভুলের ধরন (ঐচ্ছিক)</label>
               <select id="entry-mistake-category" class="form-select">
                 <option value="">কোনোটিই নয়</option>
                 <option value="silly">Silly mistake (ছোটখাট ভুল)</option>
@@ -969,17 +997,22 @@
                 <option value="time">Time pressure (সময়ের অভাব)</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">নোট (ঐচ্ছিক)</label>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 12px;">নোট (ঐচ্ছিক)</label>
               <input type="text" id="entry-note" class="form-input" placeholder="যেমন: রিভিশন বাকি" />
             </div>
           </div>
 
-          <div id="entry-error" style="color: #f87171; font-size: 13px; margin-bottom: 12px; min-height: 18px; text-align: center; font-weight: 500;"></div>
+          <!-- LIVE PREVIEW BOX -->
+          <div id="entry-live-preview-box" style="background: var(--card-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin: 12px 0; font-size: 13px; line-height: 1.6;">
+            <!-- Populated via updateChapterLivePreview() -->
+          </div>
+
+          <div id="entry-error" style="color: #f87171; font-size: 13px; margin-bottom: 12px; min-height: 18px; text-align: center; font-weight: 600;"></div>
 
           <div style="display: flex; gap: 10px; margin-top: 10px;">
             <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeChapterModal()">বাতিল</button>
-            <button type="submit" class="btn btn-primary" style="flex: 2;">সেভ করো</button>
+            <button type="submit" id="btn-save-chapter-mark" class="btn btn-primary" style="flex: 2;">💾 সেভ করো</button>
           </div>
         </form>
       </div>
@@ -1283,7 +1316,7 @@
   <div class="modal-backdrop" id="modal-signup">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 class="modal-title">নতুন শিক্ষার্থী যোগ করুন</h3>
+        <h3 class="modal-title" id="signup-modal-title">নতুন শিক্ষার্থী যোগ করুন</h3>
         <button class="close-btn" onclick="closeModal('modal-signup')">✕</button>
       </div>
       <form onsubmit="handleCreateStudent(event)">
@@ -1312,7 +1345,7 @@
             <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="su-pin-group">
           <label class="form-label">৪-সংখ্যার PIN (লগইনের জন্য)</label>
           <input type="password" id="su-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" class="form-input" placeholder="৪-সংখ্যার পিন দিন" required />
         </div>
@@ -1369,6 +1402,155 @@
 
   <!-- Chart.js (Loaded dynamically for admin view) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+      query, where, limit
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
+      authDomain: "linen-math-v6shk.firebaseapp.com",
+      projectId: "linen-math-v6shk",
+      storageBucket: "linen-math-v6shk.firebasestorage.app",
+      messagingSenderId: "495265888515",
+      appId: "1:495265888515:web:eb3051b5dccdde9962d136"
+    };
+    const FIRESTORE_DB_ID = "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app, FIRESTORE_DB_ID);
+
+    window.signOutFirebase = async function() {
+      try {
+        await signOut(auth);
+        console.log('[AUTH] signed out');
+      } catch (err) {
+        console.warn('[AUTH] signOut error:', err);
+      }
+    };
+
+    let activeGoogleAuthPromise = null;
+
+    window.signInWithGoogleAuth = function() {
+      if (activeGoogleAuthPromise) {
+        return activeGoogleAuthPromise;
+      }
+
+      activeGoogleAuthPromise = (async () => {
+        try {
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+          console.log(`[AUTH] signed in as ${user?.email}`);
+          if (window.initMTDB) {
+            await window.initMTDB();
+          }
+          return {
+            success: true,
+            user: {
+              uid: user.uid,
+              email: user.email || '',
+              displayName: user.displayName || ''
+            }
+          };
+        } catch (err) {
+          const code = err?.code || '';
+          const msg = err?.message || String(err);
+          const isCancelled = code === 'auth/cancelled-popup-request' ||
+                              code === 'auth/popup-closed-by-user' ||
+                              msg.includes('cancelled-popup-request') ||
+                              msg.includes('popup-closed-by-user');
+          if (isCancelled) {
+            console.warn('[Auth] Google sign-in cancelled or popup closed');
+            return {
+              success: false,
+              cancelled: true,
+              error: code || msg
+            };
+          }
+          console.error('[Auth] Google sign-in failed:', err);
+          return {
+            success: false,
+            cancelled: false,
+            error: code || msg
+          };
+        } finally {
+          activeGoogleAuthPromise = null;
+        }
+      })();
+
+      return activeGoogleAuthPromise;
+    };
+
+    window.signInWithGoogle = async function() {
+      const res = await window.signInWithGoogleAuth();
+      if (res.success) {
+        if (typeof handleGoogleAuthLogin === 'function') {
+          await handleGoogleAuthLogin();
+        } else {
+          window.location.reload();
+        }
+      } else if (!res.cancelled) {
+        alert('Google Sign-In Error: ' + res.error);
+      }
+    };
+
+    window.initMTDB = async () => {
+      try {
+        await getDocs(query(collection(db, 'students'), limit(1)));
+        window.MTDB = {
+          getByEmail: async (email) => {
+            const s = await getDocs(query(collection(db,'students'), where('email','==',email), limit(1)));
+            return s.empty ? null : s.docs[0].data();
+          },
+          get:    async (uid) => { const d = await getDoc(doc(db,'students',uid)); return d.exists() ? d.data() : null; },
+          save:   async (student) => { await setDoc(doc(db,'students',student.id), student, { merge: true }); },
+          list:   async () => (await getDocs(collection(db,'students'))).docs.map(d => d.data()),
+          remove: async (uid) => { await deleteDoc(doc(db,'students',uid)); }
+        };
+        if (typeof isFirestoreActive !== 'undefined') isFirestoreActive = true;
+        if (typeof updateSyncBadge === 'function') updateSyncBadge();
+        return true;
+      } catch (e) {
+        console.warn('[MTDB] Re-init probe error:', e);
+        return false;
+      }
+    };
+
+    window.MTDB = null;
+    window.MTDBReady = (async () => {
+      try {
+        if (auth.authStateReady) {
+          await auth.authStateReady();
+        }
+        // connectivity probe - if this throws we stay on localStorage
+        await getDocs(query(collection(db, 'students'), limit(1)));
+        window.MTDB = {
+          getByEmail: async (email) => {
+            const s = await getDocs(query(collection(db,'students'), where('email','==',email), limit(1)));
+            return s.empty ? null : s.docs[0].data();
+          },
+          get:    async (uid) => { const d = await getDoc(doc(db,'students',uid)); return d.exists() ? d.data() : null; },
+          save:   async (student) => { await setDoc(doc(db,'students',student.id), student, { merge: true }); },
+          list:   async () => (await getDocs(collection(db,'students'))).docs.map(d => d.data()),
+          remove: async (uid) => { await deleteDoc(doc(db,'students',uid)); }
+        };
+        console.log('[MTDB] Firestore connected:', FIRESTORE_DB_ID);
+        return true;
+      } catch (err) {
+        console.warn('[MTDB] Firestore unavailable, using localStorage:', err);
+        window.MTDB = null;
+        return false;
+      }
+    })();
+  </script>
 
   <!-- =========================================================================
        APPLICATION SCRIPT
@@ -1476,32 +1658,31 @@
     /* =========================================================================
        2. FIREBASE & CLOUD SYNC LAYER & STATE PERSISTENCE
        ========================================================================= */
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDUMMY_REPLACE_ME",
-      authDomain: "<project>.firebaseapp.com",
-      projectId: "<project>",
-      storageBucket: "<project>.appspot.com",
-      messagingSenderId: "000000000000",
-      appId: "1:000000000000:web:xxxxxxxxxxxx"
-    };
-
-    let firestoreDb = null;
     let isFirestoreActive = false;
 
-    function initFirebase() {
-      if (typeof firebase !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.includes('DUMMY')) {
-        try {
-          if (!firebase.apps || !firebase.apps.length) {
-            firebase.initializeApp(FIREBASE_CONFIG);
-          }
-          firestoreDb = firebase.firestore();
-          isFirestoreActive = true;
-        } catch (err) {
-          console.warn('Firebase init fallback to localStorage:', err);
-          isFirestoreActive = false;
-        }
+    function updateSyncBadge() {
+      const badge = document.getElementById('sync-badge');
+      if (!badge) return;
+      if (isFirestoreActive) {
+        badge.textContent = '☁ ক্লাউড সিঙ্ক চালু';
+        badge.style.color = '#34d399';
+        badge.style.cursor = 'default';
+        badge.style.textDecoration = 'none';
+        badge.onclick = null;
+        badge.title = 'ক্লাউড ডেটাবেজ সংযুক্ত আছে';
       } else {
-        isFirestoreActive = false;
+        badge.textContent = '🔒 সিঙ্ক চালু করতে ক্লিক করুন';
+        badge.style.color = '#fbbf24';
+        badge.style.cursor = 'pointer';
+        badge.style.textDecoration = 'underline';
+        badge.onclick = () => {
+          if (typeof window.signInWithGoogle === 'function') {
+            window.signInWithGoogle();
+          } else {
+            alert('Firebase Auth লোড হচ্ছে, দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
+          }
+        };
+        badge.title = 'Google অ্যাকাউন্ট দিয়ে সাইন-ইন করে ক্লাউড সিঙ্ক চালু করুন';
       }
     }
 
@@ -1510,11 +1691,10 @@
       if (!email) return null;
       const cleanEmail = email.trim().toLowerCase();
 
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          const snapshot = await firestoreDb.collection('students').where('email', '==', cleanEmail).limit(1).get();
-          if (!snapshot.empty) {
-            const data = snapshot.docs[0].data();
+          const data = await window.MTDB.getByEmail(cleanEmail);
+          if (data) {
             const idx = state.profiles.findIndex(p => p.id === data.id);
             if (idx >= 0) state.profiles[idx] = data;
             else state.profiles.push(data);
@@ -1530,11 +1710,10 @@
 
     async function db_getStudent(uid) {
       if (!uid) return null;
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          const docSnap = await firestoreDb.collection('students').doc(uid).get();
-          if (docSnap.exists) {
-            const data = docSnap.data();
+          const data = await window.MTDB.get(uid);
+          if (data) {
             const idx = state.profiles.findIndex(p => p.id === data.id);
             if (idx >= 0) state.profiles[idx] = data;
             else state.profiles.push(data);
@@ -1567,9 +1746,9 @@
         localStorage.setItem('medtrack_students', JSON.stringify(list));
       } catch (e) {}
 
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          await firestoreDb.collection('students').doc(student.id).set(student, { merge: true });
+          await window.MTDB.save(student);
         } catch (err) {
           console.warn('Firestore write error in db_saveStudent:', err);
         }
@@ -1577,13 +1756,9 @@
     }
 
     async function db_listStudents() {
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          const snapshot = await firestoreDb.collection('students').get();
-          const list = [];
-          snapshot.forEach(doc => {
-            list.push(doc.data());
-          });
+          const list = await window.MTDB.list();
           list.forEach(st => {
             const idx = state.profiles.findIndex(p => p.id === st.id);
             if (idx >= 0) state.profiles[idx] = st;
@@ -1609,9 +1784,9 @@
         localStorage.setItem('medtrack_students', JSON.stringify(list));
       } catch (e) {}
 
-      if (isFirestoreActive && firestoreDb) {
+      if (window.MTDB) {
         try {
-          await firestoreDb.collection('students').doc(uid).delete();
+          await window.MTDB.remove(uid);
         } catch (err) {
           console.warn('Firestore delete error in db_deleteStudent:', err);
         }
@@ -1659,6 +1834,33 @@
     let drillMasteryChartInstance = null;
     let drillRoutineChartInstance = null;
 
+    /* =========================================================================
+       3. CALCULATIONS & CATEGORIES (Exact 6 Categories System)
+       ========================================================================= */
+    function score100(m) {
+      if (!m) return 0;
+      const neg = (parseFloat(m.wrong) || 0) * 0.25;
+      return Math.max(0, Math.round(
+        (((parseFloat(m.correct) || 0) - neg) / Math.max(1, parseFloat(m.total) || 1)) * 100
+      ));
+    }
+
+    function migrateStudentMarks(p) {
+      if (!p || !Array.isArray(p.marks)) return;
+      p.marks.forEach(m => {
+        const tot = parseFloat(m.total) || 1;
+        const corr = parseFloat(m.correct) || 0;
+        if (m.wrong === null || m.wrong === undefined) {
+          m.wrong = Math.max(0, tot - corr);
+        }
+        if (m.skipped === null || m.skipped === undefined) {
+          m.skipped = Math.max(0, tot - corr - (parseFloat(m.wrong) || 0));
+        }
+        m.score100 = score100(m);
+        if (m.mistakeCategory === undefined) m.mistakeCategory = null;
+      });
+    }
+
     function loadState() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -1680,13 +1882,7 @@
       state.profiles.forEach(p => {
         if (p.role === 'student') {
           if (!Array.isArray(p.marks)) p.marks = [];
-          p.marks.forEach(m => {
-            const tot = parseFloat(m.total) || 1;
-            const corr = parseFloat(m.correct) || 0;
-            if (m.wrong === undefined) m.wrong = Math.max(0, tot - corr);
-            if (m.skipped === undefined) m.skipped = Math.max(0, tot - corr - (parseFloat(m.wrong) || 0));
-            if (m.mistakeCategory === undefined) m.mistakeCategory = null;
-          });
+          migrateStudentMarks(p);
           if (!Array.isArray(p.milestones)) p.milestones = [];
           if (p.use200Scale === undefined) p.use200Scale = false;
           refreshStudentCategories(p);
@@ -1701,16 +1897,12 @@
         admin.email = 'rayanbinakter@gmail.com';
         admin.password = '17514';
       }
-      initFirebase();
     }
 
     function saveState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
-    /* =========================================================================
-       3. CALCULATIONS & CATEGORIES (Exact 6 Categories System)
-       ========================================================================= */
     const SUBJECTS = [
       { id: 'bio', name: 'বায়োলজি' },
       { id: 'chem', name: 'রসায়ন' },
@@ -1822,22 +2014,14 @@
           return sId === s.id;
         });
         if (!entries.length) return;
-        const totals = entries.map(m => {
-          const neg = (m.wrong || 0) * 0.25;
-          return (((parseFloat(m.correct) || 0) - neg) / Math.max(1, (parseFloat(m.total) || 1))) * 100;
-        });
+        const totals = entries.map(m => (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m));
         const subjAvg = totals.reduce((a, b) => a + b, 0) / totals.length;
         num += subjAvg * WEIGHTS[s.id];
         den += WEIGHTS[s.id];
       });
       if (den === 0) {
-        let allCorr = 0, allTot = 0, allNeg = 0;
-        student.marks.forEach(m => {
-          allCorr += parseFloat(m.correct) || 0;
-          allTot += parseFloat(m.total) || 1;
-          allNeg += (parseFloat(m.wrong) || 0) * 0.25;
-        });
-        return Math.max(0, ((allCorr - allNeg) / allTot) * 100);
+        const allScores = student.marks.map(m => (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m));
+        return allScores.reduce((a, b) => a + b, 0) / allScores.length;
       }
       return num / den;
     }
@@ -1851,15 +2035,15 @@
           return sId === s.id;
         });
         if (!entries.length) return;
-        const totals = entries.map(m => {
-          const neg = (m.wrong || 0) * 0.25;
-          return (((parseFloat(m.correct) || 0) - neg) / Math.max(1, (parseFloat(m.total) || 1))) * 100;
-        });
+        const totals = entries.map(m => (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m));
         const subjAvg = totals.reduce((a, b) => a + b, 0) / totals.length;
         num += subjAvg * WEIGHTS[s.id];
         den += WEIGHTS[s.id];
       });
-      if (den === 0) return 'Red Zone';
+      if (den === 0) {
+        const allScores = student.marks.map(m => (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m));
+        return categoryFromScore100(allScores.reduce((a, b) => a + b, 0) / allScores.length);
+      }
       return categoryFromScore100(num / den);
     }
 
@@ -1887,24 +2071,19 @@
       const marks = student.marks || [];
       const totalAttempts = marks.length;
 
-      let bioCorrect = 0, bioTotal = 0;
-      let chemCorrect = 0, chemTotal = 0;
-      let phyCorrect = 0, phyTotal = 0;
-      let allCorrect = 0, allTotal = 0;
+      let bioScores = [], chemScores = [], phyScores = [], allScores = [];
 
       marks.forEach(m => {
         const item = SYLLABUS[m.chapterId];
         if (!item) return;
         const paper = item[0];
-        const c = parseFloat(m.correct) || 0;
-        const t = parseFloat(m.total) || 0;
+        const sc = (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m);
 
-        allCorrect += c;
-        allTotal += t;
+        allScores.push(sc);
 
-        if (paper.startsWith('bio')) { bioCorrect += c; bioTotal += t; }
-        else if (paper.startsWith('chem')) { chemCorrect += c; chemTotal += t; }
-        else if (paper.startsWith('phy')) { phyCorrect += c; phyTotal += t; }
+        if (paper.startsWith('bio')) bioScores.push(sc);
+        else if (paper.startsWith('chem')) chemScores.push(sc);
+        else if (paper.startsWith('phy')) phyScores.push(sc);
       });
 
       const sscScore = (parseFloat(student.ssc) || 0) * 8;
@@ -1913,9 +2092,9 @@
       const penalty = student.isSecondTimer ? 3 : 0;
       const gpaScore = Math.max(0, Math.min(100, baseGPA - penalty));
 
-      const writtenAvgPct = allTotal > 0 ? (allCorrect / allTotal) : 0;
+      const writtenAvgScore = allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
       const streakBonus = Math.min(6, (student.streak || 0) * 0.3);
-      const writtenScore = Math.min(100, (writtenAvgPct * 100) + streakBonus);
+      const writtenScore = Math.min(100, writtenAvgScore + streakBonus);
 
       const grandTotal = totalAttempts > 0 ? (gpaScore + writtenScore) : gpaScore;
 
@@ -1934,14 +2113,26 @@
         baseGPA,
         penalty,
         gpaScore,
-        writtenAvgPct,
+        writtenAvgScore,
         writtenScore,
         grandTotal,
         rank,
-        bio: { correct: bioCorrect, total: bioTotal },
-        chem: { correct: chemCorrect, total: chemTotal },
-        phy: { correct: phyCorrect, total: phyTotal },
-        all: { correct: allCorrect, total: allTotal }
+        bio: {
+          count: bioScores.length,
+          avg: bioScores.length > 0 ? (bioScores.reduce((a, b) => a + b, 0) / bioScores.length) : 0
+        },
+        chem: {
+          count: chemScores.length,
+          avg: chemScores.length > 0 ? (chemScores.reduce((a, b) => a + b, 0) / chemScores.length) : 0
+        },
+        phy: {
+          count: phyScores.length,
+          avg: phyScores.length > 0 ? (phyScores.reduce((a, b) => a + b, 0) / phyScores.length) : 0
+        },
+        all: {
+          count: allScores.length,
+          avg: allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0
+        }
       };
     }
 
@@ -1994,6 +2185,7 @@
        5. LOGIN FLOW & AUTHENTICATION
        ========================================================================= */
     const session = { user: null };
+    let pendingGoogleUser = null;
 
     function showLogin() {
       navigate('login');
@@ -2012,6 +2204,160 @@
       if (emailInput) emailInput.value = '';
       if (pinInput) pinInput.value = '';
       if (msgEl) msgEl.textContent = '';
+    }
+
+    let isGoogleLoginProcessing = false;
+
+    async function handleGoogleAuthLogin() {
+      if (isGoogleLoginProcessing) return;
+      isGoogleLoginProcessing = true;
+
+      const btn = document.getElementById('btnGoogleSignIn');
+      const errEl = document.getElementById('li-error');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'wait';
+      }
+      if (errEl) {
+        errEl.style.color = 'var(--text-dim)';
+        errEl.textContent = 'Google সাইন-ইন প্রক্রিয়াধীন…';
+      }
+
+      try {
+        if (typeof window.signInWithGoogleAuth !== 'function') {
+          if (errEl) {
+            errEl.style.color = 'var(--rose)';
+            errEl.textContent = 'Firebase Auth এখনো প্রস্তুত নয়, কিছুক্ষণ পর চেষ্টা করুন।';
+          }
+          return;
+        }
+
+        const res = await window.signInWithGoogleAuth();
+        if (!res.success) {
+          if (res.cancelled) {
+            if (errEl) {
+              errEl.textContent = '';
+            }
+          } else {
+            if (errEl) {
+              errEl.style.color = 'var(--rose)';
+              let msg = res.error || 'অপ্রত্যাশিত ত্রুটি';
+              if (msg.includes('popup-blocked')) {
+                msg = 'ব্রাউজারে পপ-আপ ব্লক করা হয়েছে। পপ-আপ অনুমতি দিন।';
+              } else if (msg.includes('network-request-failed')) {
+                msg = 'ইন্টারনেট সংযোগ সমস্যা। সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।';
+              }
+              errEl.textContent = 'Google সাইন-ইন ব্যর্থ: ' + msg;
+            }
+          }
+          return;
+        }
+
+        const authUser = res.user;
+        const exactEmail = authUser.email || '';
+        console.log(`[AUTH] signed in as ${exactEmail}`);
+        const cleanEmail = exactEmail.trim().toLowerCase();
+
+        // Check if email is Admin (accepts both rayanbinakter@gmail.com and rayanbinakhter@gmail.com)
+        if (cleanEmail === 'rayanbinakter@gmail.com' || cleanEmail === 'rayanbinakhter@gmail.com') {
+          let admin = state.profiles.find(p => p.role === 'admin');
+          if (!admin) {
+            admin = { role: 'admin', id: 'admin-1', name: authUser.displayName || 'অ্যাডমিন', email: cleanEmail };
+            state.profiles.unshift(admin);
+          } else {
+            admin.email = cleanEmail;
+            if (authUser.displayName) admin.name = authUser.displayName;
+          }
+          session.user = { role: 'admin', id: admin.id };
+          state.currentUser = session.user;
+          saveState();
+          if (errEl) {
+            errEl.style.color = 'var(--emerald)';
+            errEl.textContent = '✓ অ্যাডমিন হিসেবে প্রবেশ সফল!';
+          }
+          setupNavForUser('admin', admin);
+          navigate('admin-home');
+          return;
+        }
+
+        // Look up student by authUid or by email
+        let student = null;
+        if (authUser.uid) {
+          student = await db_getStudent(authUser.uid);
+        }
+        if (!student && cleanEmail) {
+          student = await db_getStudentByEmail(cleanEmail);
+        }
+        if (!student) {
+          student = state.profiles.find(p => p.role === 'student' && ((p.authUid && p.authUid === authUser.uid) || (p.email && (p.email || '').trim().toLowerCase() === cleanEmail))) || null;
+        }
+
+        if (student) {
+          // Ensure student uses Firebase Auth UID as document ID and authUid
+          const oldId = student.id;
+          student.id = authUser.uid;
+          student.authUid = authUser.uid;
+          student.googleVerified = true;
+          if (authUser.displayName && (!student.name || student.name === 'নতুন শিক্ষার্থী' || student.name === 'শিক্ষার্থী')) {
+            student.name = authUser.displayName;
+          }
+          await db_saveStudent(student);
+          if (oldId && oldId !== authUser.uid) {
+            await db_deleteStudent(oldId);
+          }
+
+          if (errEl) {
+            errEl.style.color = 'var(--emerald)';
+            errEl.textContent = '✓ সফল! ঢুকছো…';
+          }
+          await enterStudentApp(student);
+        } else {
+          // Show signup modal with prefilled readonly email & no PIN
+          if (errEl) errEl.textContent = '';
+          openSignUpModalForGoogle(authUser);
+        }
+      } finally {
+        isGoogleLoginProcessing = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+        }
+      }
+    }
+
+    function openSignUpModalForGoogle(authUser) {
+      pendingGoogleUser = authUser;
+      const modalTitle = document.getElementById('signup-modal-title');
+      const nameInput = document.getElementById('su-name');
+      const emailInput = document.getElementById('su-email');
+      const sscInput = document.getElementById('su-ssc');
+      const hscInput = document.getElementById('su-hsc');
+      const timerInput = document.getElementById('su-timer');
+      const pinInput = document.getElementById('su-pin');
+      const pinGroup = document.getElementById('su-pin-group');
+
+      if (modalTitle) modalTitle.textContent = 'Google শিক্ষার্থী প্রোফাইল সম্পন্ন করুন';
+      if (nameInput) nameInput.value = authUser.displayName || '';
+      if (emailInput) {
+        emailInput.value = authUser.email || '';
+        emailInput.readOnly = true;
+        emailInput.style.backgroundColor = 'var(--card-hover)';
+        emailInput.style.cursor = 'not-allowed';
+      }
+      if (sscInput) sscInput.value = '5.00';
+      if (hscInput) hscInput.value = '5.00';
+      if (timerInput) timerInput.value = 'false';
+      if (pinGroup) pinGroup.style.display = 'none';
+      if (pinInput) {
+        pinInput.required = false;
+        pinInput.value = '';
+      }
+
+      updateLiveGpaPreview();
+      openModal('modal-signup');
     }
 
     function handleLoginEmailInput(e) {
@@ -2114,13 +2460,15 @@
       const email = document.getElementById('adm-login-email').value.trim().toLowerCase();
       const pass = document.getElementById('adm-login-password').value.trim();
 
-      // Fixed admin credentials: rayanbinakter@gmail.com / 17514
-      if (email === 'rayanbinakter@gmail.com' && pass === '17514') {
+      // Fixed admin credentials: rayanbinakter@gmail.com / rayanbinakhter@gmail.com with PIN 17514
+      if ((email === 'rayanbinakter@gmail.com' || email === 'rayanbinakhter@gmail.com') && pass === '17514') {
         closeModal('modal-admin-login');
         let admin = state.profiles.find(p => p.role === 'admin');
         if (!admin) {
-          admin = { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' };
+          admin = { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: email, password: '17514' };
           state.profiles.unshift(admin);
+        } else {
+          admin.email = email;
         }
         state.currentUser = { role: 'admin', id: admin.id };
         saveState();
@@ -2158,12 +2506,21 @@
         document.getElementById('nav-streak').textContent = `${user.streak || 0} দিন`;
         document.getElementById('nav-rank').textContent = metrics.rank !== '—' ? `#${metrics.rank}/১০০` : '#—/১০০';
       }
+
+      updateSyncBadge();
     }
 
-    function logout() {
+    async function logout() {
       session.user = null;
       state.currentUser = null;
       saveState();
+      if (typeof window.signOutFirebase === 'function') {
+        try {
+          await window.signOutFirebase();
+        } catch (e) {
+          console.warn('[AUTH] Firebase signOut error:', e);
+        }
+      }
       closeDropdown();
       showLogin();
     }
@@ -2172,12 +2529,33 @@
        6. STUDENT SIGN-UP
        ========================================================================= */
     function openSignUpModal() {
-      document.getElementById('su-name').value = '';
-      document.getElementById('su-email').value = '';
-      document.getElementById('su-ssc').value = '5.00';
-      document.getElementById('su-hsc').value = '5.00';
-      document.getElementById('su-timer').value = 'false';
-      document.getElementById('su-pin').value = '';
+      pendingGoogleUser = null;
+      const modalTitle = document.getElementById('signup-modal-title');
+      const nameInput = document.getElementById('su-name');
+      const emailInput = document.getElementById('su-email');
+      const sscInput = document.getElementById('su-ssc');
+      const hscInput = document.getElementById('su-hsc');
+      const timerInput = document.getElementById('su-timer');
+      const pinInput = document.getElementById('su-pin');
+      const pinGroup = document.getElementById('su-pin-group');
+
+      if (modalTitle) modalTitle.textContent = 'নতুন শিক্ষার্থী যোগ করুন';
+      if (nameInput) nameInput.value = '';
+      if (emailInput) {
+        emailInput.value = '';
+        emailInput.readOnly = false;
+        emailInput.style.backgroundColor = '';
+        emailInput.style.cursor = 'text';
+      }
+      if (sscInput) sscInput.value = '5.00';
+      if (hscInput) hscInput.value = '5.00';
+      if (timerInput) timerInput.value = 'false';
+      if (pinGroup) pinGroup.style.display = 'block';
+      if (pinInput) {
+        pinInput.required = true;
+        pinInput.value = '';
+      }
+
       updateLiveGpaPreview();
       openModal('modal-signup');
     }
@@ -2205,20 +2583,42 @@
       const isSecondTimer = document.getElementById('su-timer').value === 'true';
       const rawPin = document.getElementById('su-pin').value.trim();
 
-      // Check if email already registered via db_
-      const existing = await db_getStudentByEmail(email);
-      if (existing) {
-        alert('এই ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে! অনুগ্রহ করে লগইন করুন।');
+      const isGoogleSignup = !!pendingGoogleUser;
+
+      if (!isGoogleSignup && !rawPin) {
+        alert('দয়া করে ৪-সংখ্যার PIN দিন!');
         return;
       }
 
+      // Check if email already registered via db_
+      const existing = await db_getStudentByEmail(email);
+      if (existing) {
+        if (isGoogleSignup) {
+          existing.authUid = pendingGoogleUser.uid;
+          existing.googleVerified = true;
+          await db_saveStudent(existing);
+          closeModal('modal-signup');
+          pendingGoogleUser = null;
+          await enterStudentApp(existing);
+          return;
+        } else {
+          alert('এই ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে! অনুগ্রহ করে লগইন করুন।');
+          return;
+        }
+      }
+
+      const studentId = isGoogleSignup ? pendingGoogleUser.uid : ('st-' + Date.now());
+      const authUid = isGoogleSignup ? pendingGoogleUser.uid : null;
+
       const newStudent = {
         role: 'student',
-        id: 'st-' + Date.now(),
-        name,
-        email,
-        pinHash: hashPin(rawPin),
-        pin: hashPin(rawPin),
+        id: studentId,
+        authUid: authUid,
+        googleVerified: isGoogleSignup,
+        name: name || (pendingGoogleUser ? pendingGoogleUser.displayName : '') || 'শিক্ষার্থী',
+        email: email,
+        pinHash: rawPin ? hashPin(rawPin) : '',
+        pin: rawPin ? hashPin(rawPin) : '',
         ssc: ssc.toFixed(2),
         hsc: hsc.toFixed(2),
         isSecondTimer,
@@ -2232,6 +2632,7 @@
 
       await db_saveStudent(newStudent);
       closeModal('modal-signup');
+      pendingGoogleUser = null;
       await enterStudentApp(newStudent);
     }
 
@@ -2325,26 +2726,25 @@
       document.getElementById('row-total').textContent = `${m.grandTotal.toFixed(2)} / ২০০`;
 
       // 4 Stat Cards
-      document.getElementById('stat-bio').textContent = m.bio.total > 0 ? `${m.bio.correct}/${m.bio.total}` : '—';
-      document.getElementById('stat-chem').textContent = m.chem.total > 0 ? `${m.chem.correct}/${m.chem.total}` : '—';
-      document.getElementById('stat-phy').textContent = m.phy.total > 0 ? `${m.phy.correct}/${m.phy.total}` : '—';
-      document.getElementById('stat-overall').textContent = m.all.total > 0 ? `${m.all.correct}/${m.all.total}` : '—';
+      document.getElementById('stat-bio').textContent = m.bio.count > 0 ? `${Math.round(m.bio.avg)} / ১০০` : '—';
+      document.getElementById('stat-chem').textContent = m.chem.count > 0 ? `${Math.round(m.chem.avg)} / ১০০` : '—';
+      document.getElementById('stat-phy').textContent = m.phy.count > 0 ? `${Math.round(m.phy.avg)} / ১০০` : '—';
+      document.getElementById('stat-overall').textContent = m.all.count > 0 ? `${m.all.count}টি পরীক্ষা` : '—';
 
       // Weak Chapters (<50% mastery)
       const weakList = document.getElementById('home-weak-list');
-      const chapterAverages = {};
+      const chapterMarks = {};
       student.marks.forEach(mk => {
-        if (!chapterAverages[mk.chapterId]) chapterAverages[mk.chapterId] = { correct: 0, total: 0 };
-        chapterAverages[mk.chapterId].correct += parseFloat(mk.correct) || 0;
-        chapterAverages[mk.chapterId].total += parseFloat(mk.total) || 0;
+        if (!chapterMarks[mk.chapterId]) chapterMarks[mk.chapterId] = [];
+        chapterMarks[mk.chapterId].push((mk.score100 !== undefined && mk.score100 !== null) ? mk.score100 : score100(mk));
       });
 
       const weakItems = [];
-      Object.keys(chapterAverages).forEach(cId => {
-        const item = chapterAverages[cId];
-        const ratio = item.correct / item.total;
-        if (ratio < 0.5) {
-          weakItems.push({ chapterId: cId, ...item, ratio });
+      Object.keys(chapterMarks).forEach(cId => {
+        const scores = chapterMarks[cId];
+        const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+        if (avg < 50) {
+          weakItems.push({ chapterId: cId, avg, count: scores.length });
         }
       });
 
@@ -2359,7 +2759,7 @@
                 <div class="status-dot rose"></div>
                 <span style="font-size: 13px; font-weight: 500;">${chap ? chap[1] : 'অধ্যায়'}</span>
               </div>
-              <span style="font-size: 13px; font-weight: 600;" class="text-rose">${w.correct}/${w.total}</span>
+              <span style="font-size: 13px; font-weight: 600;" class="text-rose">${w.avg}/১০০</span>
             </div>
           `;
         }).join('');
@@ -2373,6 +2773,7 @@
         const sortedMarks = [...student.marks].reverse().slice(0, 5);
         recentList.innerHTML = sortedMarks.map(mk => {
           const chap = SYLLABUS[mk.chapterId];
+          const sc = (mk.score100 !== undefined && mk.score100 !== null) ? mk.score100 : score100(mk);
           const mistakeLabel = mk.mistakeCategory ? ` • <span style="color: #f87171;">${mk.mistakeCategory}</span>` : '';
           return `
             <div class="chapter-item" style="margin-bottom: 6px;">
@@ -2383,7 +2784,7 @@
                   <div style="font-size: 11px; color: var(--text-dim);">${mk.date} ${mk.note ? '• ' + mk.note : ''}${mistakeLabel}</div>
                 </div>
               </div>
-              <span style="font-size: 13px; font-weight: 600;">${mk.correct}/${mk.total}</span>
+              <span style="font-size: 13px; font-weight: 600;">${sc}/১০০</span>
             </div>
           `;
         }).join('');
@@ -2486,14 +2887,14 @@
         const labels = [];
         const scores = [];
 
-        let runningCorrect = 0, runningTotal = 0;
+        let runningScores = [];
         chronologicalMarks.forEach((m, idx) => {
-          runningCorrect += parseFloat(m.correct) || 0;
-          runningTotal += parseFloat(m.total) || 1;
-          const writtenPct = (runningCorrect / runningTotal) * 100;
+          const sc = (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m);
+          runningScores.push(sc);
+          const writtenAvg = runningScores.reduce((a, b) => a + b, 0) / runningScores.length;
           const pointScore = student.use200Scale
-            ? Math.min(200, (calcGPA(student.ssc, student.hsc, student.isSecondTimer) + writtenPct))
-            : Math.min(100, writtenPct);
+            ? Math.min(200, (calcGPA(student.ssc, student.hsc, student.isSecondTimer) + writtenAvg))
+            : Math.min(100, writtenAvg);
 
           labels.push(m.date ? m.date.slice(5) : `#${idx + 1}`);
           scores.push(Math.round(pointScore * 10) / 10);
@@ -2608,20 +3009,21 @@
         const paperChapters = SYLLABUS.filter(item => item[0] === paperKey);
         
         let attemptsCount = 0;
-        let totalScoreCorrect = 0, totalScorePossible = 0;
+        let paperScores = [];
 
         if (student) {
           student.marks.forEach(m => {
             const chap = SYLLABUS[m.chapterId];
             if (chap && chap[0] === paperKey) {
               attemptsCount++;
-              totalScoreCorrect += parseFloat(m.correct) || 0;
-              totalScorePossible += parseFloat(m.total) || 0;
+              paperScores.push((m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m));
             }
           });
         }
 
-        const scoreText = totalScorePossible > 0 ? `${totalScoreCorrect}/${totalScorePossible}` : '—';
+        const avgScore = paperScores.length > 0
+          ? `${Math.round(paperScores.reduce((a, b) => a + b, 0) / paperScores.length)} / ১০০`
+          : '—';
         const progressPct = paperChapters.length > 0 ? Math.min(100, (attemptsCount / paperChapters.length) * 100) : 0;
 
         const card = document.createElement('div');
@@ -2633,7 +3035,7 @@
         card.innerHTML = `
           <div>
             <div class="subject-name">${paper.name}</div>
-            <div class="subject-meta">${paperChapters.length}টি অধ্যায় • প্রাপ্ত স্কোর: ${scoreText}</div>
+            <div class="subject-meta">${paperChapters.length}টি অধ্যায় • গড় স্কোর: ${avgScore}</div>
           </div>
           <div>
             <div class="progress-bar-wrap">
@@ -2657,66 +3059,214 @@
       SYLLABUS.forEach((item, idx) => {
         if (item[0] !== paperKey) return;
 
-        let totalCorrect = 0, totalMarks = 0, attempts = 0;
-        if (student) {
-          student.marks.filter(m => m.chapterId === idx).forEach(m => {
-            attempts++;
-            totalCorrect += parseFloat(m.correct) || 0;
-            totalMarks += parseFloat(m.total) || 0;
-          });
+        let chapMarks = [];
+        if (student && Array.isArray(student.marks)) {
+          chapMarks = student.marks.filter(m => m.chapterId === idx);
         }
 
+        const attempts = chapMarks.length;
         let dotClass = '';
-        let scoreText = '—';
+        let rowContent = '';
 
         if (attempts > 0) {
-          scoreText = `${totalCorrect}/${totalMarks}`;
-          const ratio = totalCorrect / totalMarks;
-          if (ratio >= 0.75) dotClass = 'green';
-          else if (ratio >= 0.60) dotClass = 'indigo';
-          else if (ratio >= 0.50 || attempts < 3) dotClass = 'amber';
+          const scores = chapMarks.map(m => (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m));
+          const bestScore = Math.max(...scores);
+          const latestMark = chapMarks[chapMarks.length - 1];
+          const latestScore = (latestMark.score100 !== undefined && latestMark.score100 !== null) ? latestMark.score100 : score100(latestMark);
+          const lastDate = latestMark.date || '—';
+
+          if (bestScore >= 80) dotClass = 'green';
+          else if (bestScore >= 65) dotClass = 'indigo';
+          else if (bestScore >= 50) dotClass = 'amber';
           else dotClass = 'rose';
+
+          rowContent = `
+            <div class="chapter-left">
+              <div class="status-dot ${dotClass}"></div>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 2px;">${item[1]}</div>
+                <div style="font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <span>🏆 সেরা: <b style="color: var(--text);">${bestScore}/১০০</b></span>
+                  <span style="color: var(--border);">|</span>
+                  <span>📈 শেষ: <b style="color: var(--text);">${latestScore}/১০০</b></span>
+                  <span style="color: var(--border);">|</span>
+                  <span>${attempts} মোট চেষ্টা</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">শেষ: ${lastDate}</div>
+              </div>
+            </div>
+            <div style="text-align: right; min-width: 80px;">
+              <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; border-radius: 999px;">+ এন্ট্রি দিন</button>
+            </div>
+          `;
+        } else {
+          rowContent = `
+            <div class="chapter-left">
+              <div class="status-dot"></div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500;">${item[1]}</div>
+                <div style="font-size: 12px; color: var(--text-dim);">অনুশীলন করা হয়নি</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 11px; color: var(--accent);">+ এন্ট্রি দিন</span>
+            </div>
+          `;
         }
 
         const row = document.createElement('div');
         row.className = 'chapter-item';
+        row.style.cursor = 'pointer';
         row.onclick = () => openChapterEntryModal(idx, item[1], PAPERS[paperKey].name);
-        row.innerHTML = `
-          <div class="chapter-left">
-            <div class="status-dot ${dotClass}"></div>
-            <div>
-              <div style="font-size: 14px; font-weight: 500;">${item[1]}</div>
-              <div style="font-size: 12px; color: var(--text-dim);">${attempts > 0 ? `${attempts}টি প্রচেষ্টা` : 'অনুশীলন করা হয়নি'}</div>
-            </div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 14px; font-weight: 600;">${scoreText}</div>
-            <span style="font-size: 11px; color: var(--accent);">+ এন্ট্রি দিন</span>
-          </div>
-        `;
+        row.innerHTML = rowContent;
         list.appendChild(row);
       });
     }
 
     /* =========================================================================
-       9. CHAPTER ENTRY FORM & RESULT CARD
+       9. CHAPTER ENTRY FORM, LIVE PREVIEW & HISTORY LIST
        ========================================================================= */
-    function calculateSkipped() {
-      const total = parseFloat(document.getElementById('entry-total').value) || 0;
-      const correct = parseFloat(document.getElementById('entry-correct').value) || 0;
-      const wrong = parseFloat(document.getElementById('entry-wrong').value) || 0;
-      const skipped = Math.max(0, total - correct - wrong);
-      const skippedInput = document.getElementById('entry-skipped');
-      if (skippedInput) skippedInput.value = skipped;
-      
-      const errEl = document.getElementById('entry-error');
-      if (errEl) {
-        if (correct + wrong > total) {
-          errEl.textContent = 'মোট মিলছে না (সঠিক ও ভুল যোগফল মোট প্রশ্নের চেয়ে বেশি)';
-        } else {
-          errEl.textContent = '';
-        }
+    function renderChapterHistoryList(chapterIdx) {
+      const student = getCurrentStudent();
+      const listEl = document.getElementById('chapter-history-list');
+      const countEl = document.getElementById('chapter-history-count');
+      if (!listEl) return;
+
+      let chapMarks = [];
+      if (student && Array.isArray(student.marks)) {
+        chapMarks = student.marks.filter(m => m.chapterId === chapterIdx);
       }
+
+      if (countEl) {
+        countEl.textContent = chapMarks.length > 0 ? `${chapMarks.length}টি প্রচেষ্টা পাওয়া গেছে` : '';
+      }
+
+      if (chapMarks.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; color: var(--text-dim); font-size: 12px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm);">
+            এখনো মার্কস নেই
+          </div>
+        `;
+        return;
+      }
+
+      // Sorted newest first
+      const reversed = [...chapMarks].reverse();
+      listEl.innerHTML = reversed.map((m, revIdx) => {
+        const attemptNum = chapMarks.length - revIdx;
+        const sc100 = (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m);
+        const detailId = `history-detail-${attemptNum}-${revIdx}`;
+        const mistakeStr = m.mistakeCategory ? ` • ভুল: ${m.mistakeCategory}` : '';
+        const noteStr = m.note ? ` • ${m.note}` : '';
+
+        return `
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <b style="color: var(--accent);">প্রচেষ্টা ${attemptNum}</b> · <span style="color: var(--text-muted);">${m.date || '—'}</span>
+              </div>
+              <div style="font-weight: 700; color: var(--text);">
+                ━━ <span style="color: ${sc100 >= 75 ? '#34d399' : sc100 >= 50 ? '#818cf8' : '#f87171'};">${sc100}/১০০</span>
+              </div>
+            </div>
+            <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); font-size: 11px;">
+              <span>সঠিক ${m.correct || 0} | ভুল ${m.wrong || 0} | স্কিপড ${m.skipped || 0}${mistakeStr}${noteStr}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateChapterLivePreview() {
+      const student = getCurrentStudent();
+      const total = parseFloat(document.getElementById('entry-total').value);
+      const correct = parseFloat(document.getElementById('entry-correct').value);
+      const wrong = parseFloat(document.getElementById('entry-wrong').value);
+
+      const errEl = document.getElementById('entry-error');
+      const previewBox = document.getElementById('entry-live-preview-box');
+      const skippedInput = document.getElementById('entry-skipped');
+
+      const safeTotal = isNaN(total) ? 0 : total;
+      const safeCorrect = isNaN(correct) ? 0 : correct;
+      const safeWrong = isNaN(wrong) ? 0 : wrong;
+
+      const computedSkipped = Math.max(0, safeTotal - safeCorrect - safeWrong);
+      if (skippedInput) skippedInput.value = isNaN(total) || isNaN(correct) || isNaN(wrong) ? '' : computedSkipped;
+
+      // Validation
+      let isValid = true;
+      let errorMsg = '';
+
+      if (safeTotal <= 0) {
+        isValid = false;
+        errorMsg = 'মোট প্রশ্ন সংখ্যা অবশ্যই ১ বা তার বেশি হতে হবে';
+      } else if (safeCorrect < 0 || safeWrong < 0) {
+        isValid = false;
+        errorMsg = 'সংখ্যা ভুল — ঋণাত্মক হতে পারবে না';
+      } else if (safeCorrect + safeWrong > safeTotal) {
+        isValid = false;
+        errorMsg = 'সংখ্যা ভুল — মোট মিলছে না';
+      }
+
+      if (errEl) errEl.textContent = errorMsg;
+
+      if (!previewBox) return;
+
+      const negPenalty = (safeWrong * 0.25);
+      const curScore100 = safeTotal > 0
+        ? Math.max(0, Math.round((((safeCorrect - negPenalty) / safeTotal) * 100)))
+        : 0;
+
+      const profileSSC = student ? (parseFloat(student.ssc) || 0) : 0;
+      const profileHSC = student ? (parseFloat(student.hsc) || 0) : 0;
+      const isSecondTimer = student ? !!student.isSecondTimer : false;
+
+      const sscScore = profileSSC * 8;
+      const hscScore = profileHSC * 12;
+      const baseGPA = sscScore + hscScore;
+      const penalty = isSecondTimer ? 3 : 0;
+      const finalGPA = Math.max(0, Math.min(100, baseGPA - penalty));
+      const score200 = curScore100 + finalGPA;
+
+      let gpaSectionHtml = '';
+      if (profileSSC > 0 || profileHSC > 0) {
+        const checkedAttr = (student && student.use200Scale) ? 'checked' : '';
+        gpaSectionHtml = `
+          <div style="border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px;">
+            <div style="font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px;">
+              ───── GPA হিসাব (প্রোফাইল থেকে) ─────
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+              <div>• SSC ${profileSSC} × ৮ = <b>${sscScore.toFixed(2)}</b></div>
+              <div>• HSC ${profileHSC} × ১২ = <b>${hscScore.toFixed(2)}</b></div>
+              <div>• Base: <b>${baseGPA.toFixed(2)}</b>${isSecondTimer ? ' <span style="color: #f87171;">(২য় বার জরিমানা −৩)</span>' : ''}</div>
+              <div>• Final GPA: <b>${finalGPA.toFixed(2)}</b> / ১০০</div>
+            </div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-top: 6px;">
+              🎯 ২০০ নম্বরে হিসাব: <span style="color: #38bdf8;">${score200.toFixed(2)} / ২০০</span>
+            </div>
+          </div>
+        `;
+      } else {
+        gpaSectionHtml = `
+          <div style="border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px; font-size: 11px; color: var(--text-dim);">
+            ⚠️ GPA সেট নেই — Settings থেকে SSC/HSC নম্বর দাও
+          </div>
+        `;
+      }
+
+      previewBox.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: var(--text-muted);">নেগেটিভ মার্কিং:</span>
+          <span style="color: ${safeWrong > 0 ? '#f87171' : 'var(--text-dim)'}; font-weight: 600;">${safeWrong} × −০.২৫ = −${negPenalty.toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+          <span style="color: var(--text-muted);">১০০ নম্বরে এই প্রচেষ্টা:</span>
+          <span style="color: #34d399; font-size: 15px; font-weight: 700;">${curScore100} / ১০০</span>
+        </div>
+        ${gpaSectionHtml}
+      `;
     }
 
     function openChapterEntryModal(chapterIdx, chapterName, paperName) {
@@ -2730,8 +3280,12 @@
       document.getElementById('entry-skipped').value = '25';
       document.getElementById('entry-mistake-category').value = '';
       document.getElementById('entry-note').value = '';
+      
       const errEl = document.getElementById('entry-error');
       if (errEl) errEl.textContent = '';
+
+      renderChapterHistoryList(chapterIdx);
+      updateChapterLivePreview();
       openModal('chapter-entry-modal');
     }
 
@@ -2745,31 +3299,33 @@
       if (!student || selectedChapterIdx === null) return;
 
       const date = document.getElementById('entry-date').value;
-      const total = parseFloat(document.getElementById('entry-total').value) || 0;
-      const correct = parseFloat(document.getElementById('entry-correct').value) || 0;
-      const wrong = parseFloat(document.getElementById('entry-wrong').value) || 0;
-      const skipped = parseFloat(document.getElementById('entry-skipped').value) || 0;
+      const total = parseFloat(document.getElementById('entry-total').value);
+      const correct = parseFloat(document.getElementById('entry-correct').value);
+      const wrong = parseFloat(document.getElementById('entry-wrong').value);
+      const skipped = parseFloat(document.getElementById('entry-skipped').value);
       const mistakeCategory = document.getElementById('entry-mistake-category').value || null;
       const note = document.getElementById('entry-note').value.trim();
       const errEl = document.getElementById('entry-error');
 
-      if (total <= 0) {
+      if (isNaN(total) || total <= 0) {
         if (errEl) errEl.textContent = 'মোট প্রশ্ন সংখ্যা অবশ্যই ১ বা তার বেশি হতে হবে';
         return;
       }
 
-      if (correct + wrong + skipped !== total || correct + wrong > total || correct < 0 || wrong < 0) {
-        if (errEl) errEl.textContent = 'মোট মিলছে না';
+      if (isNaN(correct) || isNaN(wrong) || correct < 0 || wrong < 0 || correct + wrong > total || correct + wrong + skipped !== total) {
+        if (errEl) errEl.textContent = 'সংখ্যা ভুল — মোট মিলছে না';
         return;
       }
       if (errEl) errEl.textContent = '';
 
-      // Check current category tier before saving
-      const preCat100Key = student.category100 || 'Red Zone';
-      const preCat200Key = student.category200 || 'Red Zone';
-      const prevTier = student.use200Scale
-        ? (CATEGORY_DETAILS[preCat200Key]?.tier || 1)
-        : (CATEGORY_DETAILS[preCat100Key]?.tier || 1);
+      if (!Array.isArray(student.marks)) student.marks = [];
+
+      // Calculate scores
+      const computed100 = score100({ correct, wrong, skipped, total });
+      const gpaScore = calcGPA(student.ssc, student.hsc, student.isSecondTimer);
+      const hasGPA = (parseFloat(student.ssc) || 0) > 0 || (parseFloat(student.hsc) || 0) > 0;
+      const computed200 = hasGPA ? (computed100 + gpaScore) : null;
+      const prevCount = student.marks.filter(m => m.chapterId === selectedChapterIdx).length;
 
       const entry = {
         chapterId: selectedChapterIdx,
@@ -2779,10 +3335,21 @@
         skipped,
         total,
         note,
-        mistakeCategory: mistakeCategory || null
+        mistakeCategory: mistakeCategory || null,
+        score100: computed100,
+        score200: computed200,
+        use200Scale: !!student.use200Scale,
+        attempt: prevCount + 1,
+        savedAt: new Date().toISOString()
       };
 
-      if (!student.marks) student.marks = [];
+      // Check current category tier before saving
+      const preCat100Key = student.category100 || 'Red Zone';
+      const preCat200Key = student.category200 || 'Red Zone';
+      const prevTier = student.use200Scale
+        ? (CATEGORY_DETAILS[preCat200Key]?.tier || 1)
+        : (CATEGORY_DETAILS[preCat100Key]?.tier || 1);
+
       student.marks.push(entry);
 
       // Recalculate metrics & refresh categories
@@ -2808,7 +3375,13 @@
       await db_saveStudent(student);
       closeChapterModal();
 
-      // Trigger Result Card popup after 50ms await
+      // If in paper view, re-render the chapters list so it immediately shows updated best/latest/attempts
+      if (selectedPaperId) {
+        renderPaperChapters(selectedPaperId);
+      }
+      renderSubjectsGrid();
+
+      // Trigger Result Card popup
       await new Promise(resolve => setTimeout(resolve, 50));
       showResultCard(entry, student, newM);
     }
@@ -3148,6 +3721,10 @@
           const m = calculateStudentMetrics(st);
           const rankStr = m.rank !== '—' ? `#${m.rank}` : '#—';
           const initial = st.name ? st.name.charAt(0) : 'শ';
+          const isVerified = !!(st.authUid || st.googleVerified);
+          const verifiedBadge = isVerified 
+            ? `<span style="color: #34d399; font-size: 11px; font-weight: 600; margin-left: 6px; background: rgba(52, 211, 153, 0.12); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(52, 211, 153, 0.3);">✓ যাচাইকৃত</span>` 
+            : '';
 
           const row = document.createElement('div');
           row.className = 'profile-item';
@@ -3159,7 +3736,10 @@
             <div class="profile-left">
               <div class="profile-avatar">${initial}</div>
               <div class="profile-info">
-                <h4>${st.name}</h4>
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                  <h4 style="margin: 0;">${st.name}</h4>
+                  ${verifiedBadge}
+                </div>
                 <p>${st.email} • <span class="badge" style="background: var(--card-hover);">${m.totalAttempts} প্রচেষ্টা</span></p>
               </div>
             </div>
@@ -3209,8 +3789,7 @@
 
       const paperKeys = ['phy1', 'phy2', 'chem1', 'chem2', 'bio1', 'bio2'];
       const paperLabels = ['পদার্থ ১', 'পদার্থ ২', 'রসায়ন ১', 'রসায়ন ২', 'বায়ো ১', 'বায়ো ২'];
-      const paperAvgs = [0, 0, 0, 0, 0, 0];
-      const paperCounts = [0, 0, 0, 0, 0, 0];
+      const paperScores = [[], [], [], [], [], []];
 
       let totalEntries = 0;
       students.forEach(st => {
@@ -3219,10 +3798,8 @@
           if (!chap) return;
           const pIdx = paperKeys.indexOf(chap[0]);
           if (pIdx !== -1) {
-            const correct = parseFloat(mk.correct) || 0;
-            const total = parseFloat(mk.total) || 1;
-            paperAvgs[pIdx] += (correct / total) * 100;
-            paperCounts[pIdx]++;
+            const sc = (mk.score100 !== undefined && mk.score100 !== null) ? mk.score100 : score100(mk);
+            paperScores[pIdx].push(sc);
             totalEntries++;
           }
         });
@@ -3237,7 +3814,7 @@
       chartCanvas.style.display = 'block';
       emptyEl.classList.add('hidden');
 
-      const finalData = paperAvgs.map((sum, i) => paperCounts[i] > 0 ? Math.round(sum / paperCounts[i]) : 0);
+      const finalData = paperScores.map(scores => scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0);
 
       if (classChartInstance) classChartInstance.destroy();
       classChartInstance = new Chart(chartCanvas, {
@@ -3288,8 +3865,12 @@
       const m = calculateStudentMetrics(student);
 
       // Header info
+      const isVerified = !!(student.authUid || student.googleVerified);
+      const verifiedBadge = isVerified 
+        ? `<span style="color: #34d399; font-size: 11px; font-weight: 600; margin-left: 6px; background: rgba(52, 211, 153, 0.12); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(52, 211, 153, 0.3);">✓ যাচাইকৃত</span>` 
+        : '';
       document.getElementById('drill-avatar').textContent = student.name ? student.name.charAt(0) : 'শ';
-      document.getElementById('drill-name').textContent = student.name;
+      document.getElementById('drill-name').innerHTML = `${student.name || 'শিক্ষার্থী'} ${verifiedBadge}`;
       document.getElementById('drill-email').textContent = student.email;
       document.getElementById('drill-meta').textContent = 
         `SSC: ${student.ssc} | HSC: ${student.hsc} | ${student.isSecondTimer ? '২য় বার (-৩)' : '১ম বার'} | স্ট্রিক: ${student.streak || 0} দিন`;
@@ -3315,6 +3896,7 @@
         const sortedMarks = [...student.marks].reverse().slice(0, 8);
         recentList.innerHTML = sortedMarks.map(mk => {
           const chap = SYLLABUS[mk.chapterId];
+          const sc = (mk.score100 !== undefined && mk.score100 !== null) ? mk.score100 : score100(mk);
           return `
             <div class="chapter-item" style="margin-bottom: 6px;">
               <div class="chapter-left">
@@ -3324,7 +3906,7 @@
                   <div style="font-size: 11px; color: var(--text-dim);">${mk.date} ${mk.note ? '• ' + mk.note : ''}</div>
                 </div>
               </div>
-              <span style="font-size: 13px; font-weight: 600;">${mk.correct}/${mk.total}</span>
+              <span style="font-size: 13px; font-weight: 600;">${sc}/১০০</span>
             </div>
           `;
         }).join('');
@@ -3346,18 +3928,18 @@
 
       const dates = [];
       const rankPoints = [];
-      let runningCorrect = 0, runningTotal = 0;
+      let runningScores = [];
 
       const sscScore = (parseFloat(student.ssc) || 0) * 8;
       const hscScore = (parseFloat(student.hsc) || 0) * 12;
       const gpaScore = Math.max(0, Math.min(100, sscScore + hscScore - (student.isSecondTimer ? 3 : 0)));
 
       student.marks.forEach(mk => {
-        runningCorrect += parseFloat(mk.correct) || 0;
-        runningTotal += parseFloat(mk.total) || 1;
+        const sc = (mk.score100 !== undefined && mk.score100 !== null) ? mk.score100 : score100(mk);
+        runningScores.push(sc);
         dates.push(mk.date);
 
-        const writtenScore = (runningCorrect / runningTotal) * 100;
+        const writtenScore = runningScores.reduce((a, b) => a + b, 0) / runningScores.length;
         const grandTotal = gpaScore + writtenScore;
         let idx = DIST_SAMPLES.findIndex(val => grandTotal <= val);
         if (idx === -1) idx = 100;
@@ -3405,20 +3987,19 @@
 
       const paperKeys = ['phy1', 'phy2', 'chem1', 'chem2', 'bio1', 'bio2'];
       const paperLabels = ['পদার্থ ১', 'পদার্থ ২', 'রসায়ন ১', 'রসায়ন ২', 'বায়ো ১', 'বায়ো ২'];
-      const correctSum = [0, 0, 0, 0, 0, 0];
-      const totalSum = [0, 0, 0, 0, 0, 0];
+      const paperScores = [[], [], [], [], [], []];
 
       (student.marks || []).forEach(mk => {
         const chap = SYLLABUS[mk.chapterId];
         if (!chap) return;
         const idx = paperKeys.indexOf(chap[0]);
         if (idx !== -1) {
-          correctSum[idx] += parseFloat(mk.correct) || 0;
-          totalSum[idx] += parseFloat(mk.total) || 1;
+          const sc = (mk.score100 !== undefined && mk.score100 !== null) ? mk.score100 : score100(mk);
+          paperScores[idx].push(sc);
         }
       });
 
-      const paperData = correctSum.map((c, i) => totalSum[i] > 0 ? Math.round((c / totalSum[i]) * 100) : 0);
+      const paperData = paperScores.map(scores => scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0);
 
       if (drillPaperChartInstance) drillPaperChartInstance.destroy();
       drillPaperChartInstance = new Chart(canvas, {
@@ -3460,14 +4041,14 @@
 
       const chapterScores = {};
       (student.marks || []).forEach(mk => {
-        if (!chapterScores[mk.chapterId]) chapterScores[mk.chapterId] = { correct: 0, total: 0 };
-        chapterScores[mk.chapterId].correct += parseFloat(mk.correct) || 0;
-        chapterScores[mk.chapterId].total += parseFloat(mk.total) || 0;
+        if (!chapterScores[mk.chapterId]) chapterScores[mk.chapterId] = [];
+        const sc = (mk.score100 !== undefined && mk.score100 !== null) ? mk.score100 : score100(mk);
+        chapterScores[mk.chapterId].push(sc);
       });
 
       const sortedChaps = Object.keys(chapterScores).map(cId => {
-        const item = chapterScores[cId];
-        const pct = item.total > 0 ? Math.round((item.correct / item.total) * 100) : 0;
+        const scores = chapterScores[cId];
+        const pct = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
         return {
           id: cId,
           name: SYLLABUS[cId] ? SYLLABUS[cId][1] : 'অধ্যায়',
@@ -3824,17 +4405,50 @@
       }
     }
 
-    function initApp() {
+    let __appBooted = false;
+    async function initApp() {
+      if (__appBooted) return;
+      __appBooted = true;
+      isFirestoreActive = await window.MTDBReady;
       loadState();
-      showLogin();
+
+      let sessionRestored = false;
+      if (state.currentUser) {
+        if (state.currentUser.role === 'student') {
+          const student = state.profiles.find(p => p.id === state.currentUser.id && p.role === 'student');
+          if (student) {
+            session.user = { role: 'student', id: student.id };
+            setupNavForUser('student', student);
+            navigate('home');
+            sessionRestored = true;
+          } else {
+            state.currentUser = null;
+            session.user = null;
+            saveState();
+          }
+        } else if (state.currentUser.role === 'admin') {
+          const adminUser = state.profiles.find(p => p.role === 'admin') || { role: 'admin', id: state.currentUser.id || 'admin-1', name: 'অ্যাডমিন' };
+          session.user = { role: 'admin', id: adminUser.id };
+          setupNavForUser('admin', adminUser);
+          navigate('admin-home');
+          sessionRestored = true;
+        } else {
+          state.currentUser = null;
+          session.user = null;
+          saveState();
+        }
+      }
+
+      if (!sessionRestored) {
+        showLogin();
+      }
+
       wireLoginEvents();
+      updateSyncBadge();
     }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      initApp();
-    });
-
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initApp);
+    } else {
       initApp();
     }
   </script>
