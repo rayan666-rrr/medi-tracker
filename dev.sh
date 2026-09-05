@@ -3,25 +3,37 @@
 #  Medical Tracker BD - "pull the agent's code and run it" (macOS / Linux)
 #
 #  Usage:
-#     ./dev.sh                                  # current branch
-#     ./dev.sh arena/01a07170-medi-tracker      # specific branch
+#     ./dev.sh arena/01a07170-medi-tracker   # first run only
+#     ./dev.sh                               # after that
 #
-#  fetch -> checkout -> fast-forward pull -> npm install (if needed) -> vite
+#  fetch -> checkout/create branch -> fast-forward pull -> npm install (if
+#  needed) -> vite. Handles single-branch clones (remote.origin.fetch mapped to
+#  main only), which is why a plain "git checkout <branch>" often fails with
+#  "pathspec did not match" on AI-Studio-made clones.
 #  Never commits, merges, rebases or pushes.
 # =============================================================================
 set -uo pipefail
 cd "$(dirname "$0")"
 
 branch="${1:-$(git rev-parse --abbrev-ref HEAD)}"
+echo
+echo " branch: $branch"
+echo
 
-echo "[1/4] git fetch origin"
-git fetch origin --prune || { echo "!! git fetch failed - check network/login"; exit 1; }
+echo "[1/4] git fetch origin $branch"
+git fetch origin "+refs/heads/$branch:refs/remotes/origin/$branch" \
+  || { echo "!! git fetch failed - check network and 'gh auth status'"; exit 1; }
+git fetch origin --prune 2>/dev/null
 
-if [ "$branch" != "$(git rev-parse --abbrev-ref HEAD)" ]; then
-  echo "[2/4] git checkout $branch"
-  git checkout "$branch" || exit 1
+echo "[2/4] checkout"
+if git rev-parse --verify --quiet "refs/heads/$branch" >/dev/null; then
+  if [ "$branch" != "$(git rev-parse --abbrev-ref HEAD)" ]; then
+    git checkout "$branch" || exit 1
+  else
+    echo "  already on $branch"
+  fi
 else
-  echo "[2/4] staying on $branch"
+  git checkout -b "$branch" "origin/$branch" || exit 1
 fi
 
 echo "[3/4] git pull --ff-only origin $branch"

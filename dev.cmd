@@ -6,11 +6,16 @@ REM  HOW TO USE (Windows)
 REM    1. Open File Explorer, go into the medi-tracker folder.
 REM    2. Click in the address bar at the top, type  cmd  and press Enter.
 REM       (or just double-click this dev.cmd file)
-REM    3. Type:   dev            <- pulls the branch you are already on
-REM       or:    dev arena/01a07170-medi-tracker   <- pulls a specific branch
+REM    3. Type:   dev arena/01a07170-medi-tracker   <- first run only
+REM       then:  dev                                <- after that, always enough
 REM
-REM  What it does: fetch -> checkout -> fast-forward pull -> install deps if
-REM  node_modules is missing -> start vite -> open http://localhost:3000
+REM  What it does: fetch -> checkout/create branch -> fast-forward pull ->
+REM  npm install if node_modules is missing -> start vite -> open :3000.
+REM
+REM  It handles the single-branch clone case (clone made with --single-branch,
+REM  whose remote.origin.fetch only maps refs/heads/main) by fetching the branch
+REM  you name explicitly. That is the #1 reason "git checkout <branch>" fails
+REM  with "pathspec did not match" on AI-Studio-made clones.
 REM
 REM  It NEVER commits, merges, rebases or pushes. Worst case it stops and tells
 REM  you why, leaving your working tree exactly as it was.
@@ -19,19 +24,31 @@ setlocal
 cd /d "%~dp0"
 
 set "BRANCH=%~1"
-
+if "%BRANCH%"=="" (
+  for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD') do set "BRANCH=%%b"
+)
 echo.
-echo [1/4] git fetch origin
-git fetch origin --prune
-if errorlevel 1 goto :gitfail
+echo  branch: %BRANCH%
+echo.
 
-if not "%BRANCH%"=="" (
-  echo [2/4] git checkout %BRANCH%
-  git checkout "%BRANCH%"
+echo [1/4] git fetch origin %BRANCH%
+git fetch origin "+refs/heads/%BRANCH%:refs/remotes/origin/%BRANCH%"
+if errorlevel 1 goto :gitfail
+git fetch origin --prune >nul 2>nul
+
+echo [2/4] checkout
+git rev-parse --verify --quiet "refs/heads/%BRANCH%" >nul
+if errorlevel 1 (
+  git checkout -b "%BRANCH%" "origin/%BRANCH%"
   if errorlevel 1 goto :gitfail
 ) else (
-  for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD') do set "BRANCH=%%b"
-  echo [2/4] staying on current branch: %BRANCH%
+  for /f "delims=" %%c in ('git rev-parse --abbrev-ref HEAD') do set "CURRENT=%%c"
+  if not "%CURRENT%"=="%BRANCH%" (
+    git checkout "%BRANCH%"
+    if errorlevel 1 goto :gitfail
+  ) else (
+    echo   already on %BRANCH%
+  )
 )
 
 echo [3/4] git pull --ff-only origin %BRANCH%
@@ -67,7 +84,9 @@ goto :eof
 
 :gitfail
 echo.
-echo  *** git failed - check your internet connection / login. ***
+echo  *** git failed. Check: network, and whether you are still logged in ***
+echo      test with:  gh auth status
+echo      or:         git ls-remote origin
 goto :eof
 
 :npmfail
