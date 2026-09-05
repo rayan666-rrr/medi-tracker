@@ -1412,15 +1412,51 @@
       getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
       query, where, limit
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    const firebaseConfig = {
+    // Firebase was provisioned by AI Studio, and AI Studio OWNS
+    // firebase-applet-config.json: it can rotate or re-provision those values.
+    // Hardcoding them here is how this app silently breaks one day later, so the
+    // real file is read at runtime and the literals below are a last-resort
+    // fallback for when the fetch itself fails (file:// , offline, bad deploy).
+    const FALLBACK_CONFIG = {
       apiKey: "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
       authDomain: "linen-math-v6shk.firebaseapp.com",
       projectId: "linen-math-v6shk",
       storageBucket: "linen-math-v6shk.firebasestorage.app",
       messagingSenderId: "495265888515",
-      appId: "1:495265888515:web:eb3051b5dccdde9962d136"
+      appId: "1:495265888515:web:eb3051b5dccdde9962d136",
+      firestoreDatabaseId: "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1"
     };
-    const FIRESTORE_DB_ID = "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1";
+
+    async function loadAppletConfig() {
+      const res = await fetch('./firebase-applet-config.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      if (!json.apiKey || !json.projectId) throw new Error('config missing apiKey/projectId');
+      return json;
+    }
+
+    // A same-origin JSON fetch settles in milliseconds, but a hung request must
+    // never wedge sign-in: race it against 3s and fall back.
+    const boot = await Promise.race([
+      loadAppletConfig().then(cfg => ({ cfg, source: 'firebase-applet-config.json' })),
+      new Promise(resolve => setTimeout(() => resolve({ cfg: FALLBACK_CONFIG, source: 'built-in fallback (config fetch timed out)' }), 3000))
+    ]).catch(err => ({ cfg: FALLBACK_CONFIG, source: 'built-in fallback (' + (err && err.message ? err.message : err) + ')' }));
+
+    if (boot.source !== 'firebase-applet-config.json') {
+      console.warn('%c[MTDB] ⚠️ ' + boot.source, 'color:#fbbf24');
+    } else {
+      console.log('[MTDB] Using AI Studio config → project ' + boot.cfg.projectId);
+    }
+
+    const firebaseConfig = {
+      apiKey: boot.cfg.apiKey,
+      authDomain: boot.cfg.authDomain,
+      projectId: boot.cfg.projectId,
+      storageBucket: boot.cfg.storageBucket,
+      messagingSenderId: boot.cfg.messagingSenderId,
+      appId: boot.cfg.appId
+    };
+    const FIRESTORE_DB_ID = boot.cfg.firestoreDatabaseId || '(default)';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -1502,29 +1538,65 @@
       }
     };
 
+    // One Firestore API surface, shared by boot and by post-sign-in re-init.
+    // It was duplicated in both paths before, which is how the two quietly
+    // drifted apart (one gained a method, the other didn't).
+    const buildApi = () => ({
+      getByEmail: async (email) => {
+        const s = await getDocs(query(collection(db, 'students'), where('email', '==', email), limit(1)));
+        return s.empty ? null : s.docs[0].data();
+      },
+      get:    async (uid) => { const d = await getDoc(doc(db, 'students', uid)); return d.exists() ? d.data() : null; },
+      save:   async (student) => { await setDoc(doc(db, 'students', student.id), student, { merge: true }); },
+      list:   async () => (await getDocs(collection(db, 'students'))).docs.map(d => d.data()),
+      remove: async (uid) => { await deleteDoc(doc(db, 'students', uid)); }
+    });
+
+    // initializeApp() never throws on a bad network or bad rules, so "offline"
+    // would otherwise be a dead end. Translate the raw code into the fix.
+    function explainFirestoreError(err) {
+      const code = err && err.code ? String(err.code) : '';
+      const msg  = err && err.message ? err.message : String(err);
+      if (code.includes('permission-denied')) {
+        return 'PERMISSION DENIED → the deployed rules require request.auth != null and nobody is '
+             + 'signed in. Click the amber sync badge to sign in with Google, or deploy firestore.rules.';
+      }
+      if (code.includes('not-found') || msg.includes('does not exist')) {
+        return 'DATABASE NOT FOUND → "' + FIRESTORE_DB_ID + '" does not exist in project '
+             + firebaseConfig.projectId + ' (id came from ' + boot.source + '). If AI Studio '
+             + 're-provisioned Firebase, firebase-applet-config.json is stale.';
+      }
+      if (code.includes('unavailable') || code.includes('failed-precondition')) {
+        return 'UNAVAILABLE → no network, or Firestore is not enabled on this project yet.';
+      }
+      if (msg.includes('api-key') || code.includes('invalid-argument')) {
+        return 'BAD CONFIG → API key or project id rejected by Firebase (source: ' + boot.source + ').';
+      }
+      return 'UNCLASSIFIED → code=' + (code || '(none)') + ' message=' + msg;
+    }
+
     window.initMTDB = async () => {
       try {
         await getDocs(query(collection(db, 'students'), limit(1)));
-        window.MTDB = {
-          getByEmail: async (email) => {
-            const s = await getDocs(query(collection(db,'students'), where('email','==',email), limit(1)));
-            return s.empty ? null : s.docs[0].data();
-          },
-          get:    async (uid) => { const d = await getDoc(doc(db,'students',uid)); return d.exists() ? d.data() : null; },
-          save:   async (student) => { await setDoc(doc(db,'students',student.id), student, { merge: true }); },
-          list:   async () => (await getDocs(collection(db,'students'))).docs.map(d => d.data()),
-          remove: async (uid) => { await deleteDoc(doc(db,'students',uid)); }
-        };
+        window.MTDB = buildApi();
+        window.MTDBError = null;
         if (typeof isFirestoreActive !== 'undefined') isFirestoreActive = true;
         if (typeof updateSyncBadge === 'function') updateSyncBadge();
         return true;
       } catch (e) {
-        console.warn('[MTDB] Re-init probe error:', e);
+        window.MTDBError = e;
+        console.warn('[MTDB] Re-init probe failed →', explainFirestoreError(e));
         return false;
       }
     };
 
     window.MTDB = null;
+    window.MTDBError = null;
+    window.MTDBInfo = {
+      projectId: firebaseConfig.projectId,
+      databaseId: FIRESTORE_DB_ID,
+      configSource: boot.source
+    };
     window.MTDBReady = (async () => {
       try {
         if (auth.authStateReady) {
@@ -1532,21 +1604,15 @@
         }
         // connectivity probe - if this throws we stay on localStorage
         await getDocs(query(collection(db, 'students'), limit(1)));
-        window.MTDB = {
-          getByEmail: async (email) => {
-            const s = await getDocs(query(collection(db,'students'), where('email','==',email), limit(1)));
-            return s.empty ? null : s.docs[0].data();
-          },
-          get:    async (uid) => { const d = await getDoc(doc(db,'students',uid)); return d.exists() ? d.data() : null; },
-          save:   async (student) => { await setDoc(doc(db,'students',student.id), student, { merge: true }); },
-          list:   async () => (await getDocs(collection(db,'students'))).docs.map(d => d.data()),
-          remove: async (uid) => { await deleteDoc(doc(db,'students',uid)); }
-        };
-        console.log('[MTDB] Firestore connected:', FIRESTORE_DB_ID);
+        window.MTDB = buildApi();
+        console.log('%c[MTDB] ✅ Firestore connected → ' + FIRESTORE_DB_ID + '  (config from ' + boot.source + ')', 'color:#34d399;font-weight:bold');
         return true;
       } catch (err) {
-        console.warn('[MTDB] Firestore unavailable, using localStorage:', err);
         window.MTDB = null;
+        window.MTDBError = err;
+        console.warn('%c[MTDB] ⚠️ Firestore unavailable — running on localStorage', 'color:#fbbf24;font-weight:bold');
+        console.warn('[MTDB] Likely cause: ' + explainFirestoreError(err));
+        console.warn('[MTDB] Raw error:', err);
         return false;
       }
     })();
