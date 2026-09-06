@@ -722,53 +722,12 @@
           <span>Google দিয়ে সাইন ইন করুন</span>
         </button>
 
-        <div style="display: flex; align-items: center; margin-bottom: 20px; color: var(--text-dim); font-size: 12px;">
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
-          <span style="padding: 0 10px;">অথবা ইমেইল ও PIN দিয়ে</span>
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
-        </div>
+        <!-- Inline status / error line (Google sign-in feedback) -->
+        <div id="li-error" style="color: #f87171; margin-top: 4px; font-size: 13px; text-align: center; min-height: 20px;"></div>
 
-        <form id="student-login-form" onsubmit="event.preventDefault(); attemptLogin();">
-          <div class="form-group">
-            <label class="form-label" for="li-email">ইমেইল</label>
-            <input 
-              type="email" 
-              id="li-email" 
-              class="form-input" 
-              placeholder="আপনার ইমেইল দিন" 
-              oninput="handleLoginEmailInput(event)" 
-              required 
-              autocomplete="email" 
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="li-pin">৪-সংখ্যার PIN</label>
-            <input 
-              type="password" 
-              id="li-pin" 
-              class="form-input" 
-              maxlength="4" 
-              inputmode="numeric" 
-              pattern="[0-9]*" 
-              placeholder="••••" 
-              required 
-              autocomplete="current-password" 
-              style="font-size: 24px; letter-spacing: 8px; text-align: center; padding: 8px 14px;" 
-            />
-          </div>
-
-          <button type="button" id="btnLogin" class="btn btn-secondary btn-block" style="padding: 11px; font-size: 14px; font-weight: 600;">
-            প্রবেশ করো (PIN)
-          </button>
-
-          <!-- Inline error / signup prompt -->
-          <div id="li-error" style="color: #f87171; margin-top: 14px; font-size: 13px; text-align: center; min-height: 20px;"></div>
-        </form>
-
-        <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="openSignUpModal()">+ নতুন শিক্ষার্থী যোগ করো</button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="openAdminLoginModal()" style="color: var(--text-muted);">🛡️ অ্যাডমিন লগইন</button>
+        <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; font-size: 12px; color: var(--text-dim); text-align: center; line-height: 1.7;">
+          শিক্ষার্থী: প্রথমবার Google দিয়ে সাইন-ইন করলেই প্রোফাইল তৈরি হবে।<br/>
+          শিক্ষক/অ্যাডমিন: শিক্ষক Google অ্যাকাউন্ট দিয়ে লগইন করলেই অ্যাডমিন প্যানেল খুলবে।
         </div>
       </div>
     </section>
@@ -1073,11 +1032,6 @@
               <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">পিন কোড (ঐচ্ছিক ৪-সংখ্যার PIN)</label>
-            <input type="password" id="set-pin" maxlength="4" class="form-input" placeholder="খালি রাখলে পিন অপরিবর্তিত থাকবে" />
-          </div>
-
           <!-- 200 Scale Toggle Row -->
           <div class="form-group" style="background: var(--card-elevated); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
             <div>
@@ -1357,11 +1311,6 @@
             <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
           </select>
         </div>
-        <div class="form-group" id="su-pin-group">
-          <label class="form-label">৪-সংখ্যার PIN (লগইনের জন্য)</label>
-          <input type="password" id="su-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" class="form-input" placeholder="৪-সংখ্যার পিন দিন" required />
-        </div>
-
         <!-- Live GPA Preview -->
         <div style="background: var(--card-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--accent-border); margin-bottom: 20px; font-size: 13px;">
           <div style="color: var(--text-muted); margin-bottom: 4px;">লাইভ GPA স্কোর হিসাব (১০০ তে):</div>
@@ -1369,27 +1318,6 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">শুরু করো</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 2. Admin Login Modal -->
-  <div class="modal-backdrop" id="modal-admin-login">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 class="modal-title">🛡️ অ্যাডমিন লগইন</h3>
-        <button class="close-btn" onclick="closeModal('modal-admin-login')">✕</button>
-      </div>
-      <form onsubmit="handleAdminLogin(event)">
-        <div class="form-group">
-          <label class="form-label">অ্যাডমিন ইমেইল</label>
-          <input type="email" id="adm-login-email" class="form-input" value="rayanbinakter@gmail.com" placeholder="rayanbinakter@gmail.com" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">পাসওয়ার্ড</label>
-          <input type="password" id="adm-login-password" class="form-input" value="" placeholder="পাসওয়ার্ড লিখুন" required />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">লগইন করুন</button>
       </form>
     </div>
   </div>
@@ -1670,42 +1598,16 @@
     /* =========================================================================
        1. SHARED UTILITIES, CONSTANTS & SYLLABUS DATA
        ========================================================================= */
-    function hashPin(pin) {
-      let h = 5381;
-      for (let i = 0; i < pin.length; i++) h = ((h << 5) + h + pin.charCodeAt(i)) | 0;
-      return 'h' + (h >>> 0).toString(16);
+    // The single teacher/admin Google account. Must match isTeacher() in
+    // firestore.rules. Compared case-insensitively (isTeacherEmail()).
+    // NOTE: no passwords or PINs exist anywhere in this app any more — the
+    // teacher is whoever signs in with this exact Google account, verified by
+    // Firebase Auth (and re-verified by the security rules on every write).
+    const TEACHER_EMAIL = 'rayanbinakter@gmail.com';
+
+    function isTeacherEmail(email) {
+      return String(email || '').trim().toLowerCase() === TEACHER_EMAIL;
     }
-
-    const SEED_STUDENTS = [
-      { id: 's_rayan', name: 'রায়ান', email: 'rayanbinakhter@gmail.com', pinHash: hashPin('1122') },
-      { id: 's_faria', name: 'ফারিয়া', email: 'farialaboni@gmail.com', pinHash: hashPin('2233') },
-      { id: 's_sneha', name: 'স্নেহা', email: 'sneha@gmail.com', pinHash: hashPin('3344') }
-    ];
-
-    function seedStudents() {
-      if (localStorage.getItem('medtrack_seeded_v2') === '1') {
-        console.log('Already seeded');
-        return;
-      }
-      const existing = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
-      if (existing.length > 0) {
-        localStorage.setItem('medtrack_seeded_v2', '1');
-        return;
-      }
-      const seeds = SEED_STUDENTS.map(s => ({
-        ...s, role: 'student',
-        ssc: 0, hsc: 0, isSecondTimer: false,
-        marks: [], routines: [], completions: [],
-        streak: 0, lastActive: null,
-        createdAt: new Date().toISOString().slice(0, 10)
-      }));
-      localStorage.setItem('medtrack_students', JSON.stringify(seeds));
-      localStorage.setItem('medtrack_seeded_v2', '1');
-      console.log('✓ Seeded 3 students:', seeds.map(s => s.email));
-    }
-
-    // Call seedStudents() ONCE at the very start of script
-    seedStudents();
 
     const SYLLABUS = [
       ['phy1','ভৌতজগৎ ও পরিমাপ'],['phy1','ভেক্টর'],['phy1','গতিবিদ্যা'],
@@ -1983,7 +1885,10 @@
 
     let state = {
       profiles: [
-        { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' }
+        // Role marker only — there is NO password. Admin access is granted
+        // exclusively by signing in with the teacher's Google account
+        // (TEACHER_EMAIL, enforced again by firestore.rules isTeacher()).
+        { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: TEACHER_EMAIL }
       ],
       currentUser: null
     };
@@ -2057,12 +1962,10 @@
 
       let admin = state.profiles.find(p => p.role === 'admin');
       if (!admin) {
-        state.profiles.unshift({ role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' });
-      } else {
-        // Guarantee fixed admin credentials
-        admin.email = 'rayanbinakter@gmail.com';
-        admin.password = '17514';
+        state.profiles.unshift({ role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: TEACHER_EMAIL });
       }
+      // Strip any password left over from older local state.
+      state.profiles.forEach(p => { if (p.password !== undefined) delete p.password; });
     }
 
     function saveState() {
@@ -2364,11 +2267,7 @@
 
     function renderLoginScreen() {
       document.getElementById('top-nav').classList.add('hidden');
-      const emailInput = document.getElementById('li-email');
-      const pinInput = document.getElementById('li-pin');
       const msgEl = document.getElementById('li-error');
-      if (emailInput) emailInput.value = '';
-      if (pinInput) pinInput.value = '';
       if (msgEl) msgEl.textContent = '';
     }
 
@@ -2422,8 +2321,9 @@
         console.log(`[AUTH] signed in as ${exactEmail}`);
         const cleanEmail = exactEmail.trim().toLowerCase();
 
-        // Check if email is Admin (accepts both rayanbinakter@gmail.com and rayanbinakhter@gmail.com)
-        if (cleanEmail === 'rayanbinakter@gmail.com' || cleanEmail === 'rayanbinakhter@gmail.com') {
+        // Admin = the teacher's Google account (single spelling, see
+        // TEACHER_EMAIL; firestore.rules isTeacher() enforces the same).
+        if (isTeacherEmail(cleanEmail)) {
           let admin = state.profiles.find(p => p.role === 'admin');
           if (!admin) {
             admin = { role: 'admin', id: 'admin-1', name: authUser.displayName || 'অ্যাডমিন', email: cleanEmail };
@@ -2498,8 +2398,6 @@
       const sscInput = document.getElementById('su-ssc');
       const hscInput = document.getElementById('su-hsc');
       const timerInput = document.getElementById('su-timer');
-      const pinInput = document.getElementById('su-pin');
-      const pinGroup = document.getElementById('su-pin-group');
 
       if (modalTitle) modalTitle.textContent = 'Google শিক্ষার্থী প্রোফাইল সম্পন্ন করুন';
       if (nameInput) nameInput.value = authUser.displayName || '';
@@ -2512,29 +2410,9 @@
       if (sscInput) sscInput.value = '5.00';
       if (hscInput) hscInput.value = '5.00';
       if (timerInput) timerInput.value = 'false';
-      if (pinGroup) pinGroup.style.display = 'none';
-      if (pinInput) {
-        pinInput.required = false;
-        pinInput.value = '';
-      }
 
       updateLiveGpaPreview();
       openModal('modal-signup');
-    }
-
-    function handleLoginEmailInput(e) {
-      const email = e.target.value.trim();
-      const msgEl = document.getElementById('li-error');
-      if (msgEl) msgEl.textContent = '';
-
-      // Auto-focus PIN field when a valid email format is entered
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailPattern.test(email)) {
-        const pinInput = document.getElementById('li-pin');
-        if (pinInput && document.activeElement === e.target) {
-          pinInput.focus();
-        }
-      }
     }
 
     function openSignUpWithEmail(rawEmail) {
@@ -2546,55 +2424,6 @@
           document.getElementById('su-email').value = rawEmail;
         }
       }
-    }
-
-    function attemptLogin() {
-      const errEl = document.getElementById('li-error');
-      const emailRaw = document.getElementById('li-email').value;
-      const pinRaw  = document.getElementById('li-pin').value;
-      const email = emailRaw.trim().toLowerCase();
-      const pin   = pinRaw.trim();
-
-      console.log('[login] attempt', { email, pin });
-
-      // 1. Visible feedback IMMEDIATELY — proves click handler fired
-      errEl.style.color = 'var(--text-dim)';
-      errEl.textContent = 'যাচাই হচ্ছে…';
-
-      setTimeout(() => {
-        // 2. Read storage
-        const all = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
-        console.log('[login] students in storage:', all.length, all.map(s => s.email));
-
-        if (!all.length) {
-          errEl.style.color = 'var(--rose)';
-          errEl.textContent = '✗ storage খালি — seedStudents() রান হয়নি';
-          return;
-        }
-
-        // 3. Find student by email
-        const stu = all.find(s => s.email && s.email.toLowerCase() === email);
-        if (!stu) {
-          errEl.style.color = 'var(--rose)';
-          errEl.textContent = '✗ এই ইমেইলে কোনো অ্যাকাউন্ট নেই';
-          return;
-        }
-
-        // 4. Compare PIN hash
-        const hashed = hashPin(pin);
-        console.log('[login] hash check', { hashed, stored: stu.pinHash, ok: hashed === stu.pinHash });
-        if (hashed !== stu.pinHash) {
-          errEl.style.color = 'var(--rose)';
-          errEl.textContent = '✗ ভুল পিন';
-          return;
-        }
-
-        // 5. Success
-        errEl.style.color = 'var(--emerald)';
-        errEl.textContent = '✓ সফল! ঢুকছো…';
-        session.user = { role: 'student', id: stu.id };
-        setTimeout(() => enterStudentApp(stu), 250);
-      }, 50);
     }
 
     async function enterStudentApp(stu) {
@@ -2617,29 +2446,11 @@
       navigate('home');
     }
 
-    function handleAdminLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('adm-login-email').value.trim().toLowerCase();
-      const pass = document.getElementById('adm-login-password').value.trim();
-
-      // Fixed admin credentials: rayanbinakter@gmail.com / rayanbinakhter@gmail.com with PIN 17514
-      if ((email === 'rayanbinakter@gmail.com' || email === 'rayanbinakhter@gmail.com') && pass === '17514') {
-        closeModal('modal-admin-login');
-        let admin = state.profiles.find(p => p.role === 'admin');
-        if (!admin) {
-          admin = { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: email, password: '17514' };
-          state.profiles.unshift(admin);
-        } else {
-          admin.email = email;
-        }
-        state.currentUser = { role: 'admin', id: admin.id };
-        saveState();
-        setupNavForUser('admin', admin);
-        navigate('admin-home');
-      } else {
-        showToast('ভুল অ্যাডমিন ইমেইল বা পাসওয়ার্ড!', 4000, 'error');
-      }
-    }
+    // handleAdminLogin() was removed: there is no shared admin password any
+    // more. Admin access happens exclusively through Google sign-in —
+    // handleGoogleAuthLogin() routes TEACHER_EMAIL to the admin panel, and
+    // firestore.rules isTeacher() independently enforces the same account on
+    // every privileged Firestore write.
 
     function setupNavForUser(role, user) {
       const topNav = document.getElementById('top-nav');
@@ -2698,8 +2509,6 @@
       const sscInput = document.getElementById('su-ssc');
       const hscInput = document.getElementById('su-hsc');
       const timerInput = document.getElementById('su-timer');
-      const pinInput = document.getElementById('su-pin');
-      const pinGroup = document.getElementById('su-pin-group');
 
       if (modalTitle) modalTitle.textContent = 'নতুন শিক্ষার্থী যোগ করুন';
       if (nameInput) nameInput.value = '';
@@ -2712,11 +2521,6 @@
       if (sscInput) sscInput.value = '5.00';
       if (hscInput) hscInput.value = '5.00';
       if (timerInput) timerInput.value = 'false';
-      if (pinGroup) pinGroup.style.display = 'block';
-      if (pinInput) {
-        pinInput.required = true;
-        pinInput.value = '';
-      }
 
       updateLiveGpaPreview();
       openModal('modal-signup');
@@ -2743,14 +2547,8 @@
       const ssc = parseFloat(document.getElementById('su-ssc').value) || 5.00;
       const hsc = parseFloat(document.getElementById('su-hsc').value) || 5.00;
       const isSecondTimer = document.getElementById('su-timer').value === 'true';
-      const rawPin = document.getElementById('su-pin').value.trim();
 
       const isGoogleSignup = !!pendingGoogleUser;
-
-      if (!isGoogleSignup && !rawPin) {
-        showToast('দয়া করে ৪-সংখ্যার PIN দিন!', 4000, 'warn');
-        return;
-      }
 
       // Check if email already registered via db_
       const existing = await db_getStudentByEmail(email);
@@ -2779,8 +2577,6 @@
         googleVerified: isGoogleSignup,
         name: name || (pendingGoogleUser ? pendingGoogleUser.displayName : '') || 'শিক্ষার্থী',
         email: email,
-        pinHash: rawPin ? hashPin(rawPin) : '',
-        pin: rawPin ? hashPin(rawPin) : '',
         ssc: ssc.toFixed(2),
         hsc: hsc.toFixed(2),
         isSecondTimer,
@@ -3734,7 +3530,6 @@
       document.getElementById('set-ssc').value = student.ssc || '5.00';
       document.getElementById('set-hsc').value = student.hsc || '5.00';
       document.getElementById('set-timer').value = student.isSecondTimer ? 'true' : 'false';
-      document.getElementById('set-pin').value = '';
 
       const scaleToggle = document.getElementById('set-use-200-scale');
       if (scaleToggle) {
@@ -3783,12 +3578,6 @@
         student.use200Scale = scaleToggle.checked;
       }
       
-      const newPin = document.getElementById('set-pin').value.trim();
-      if (newPin) {
-        student.pinHash = hashPin(newPin);
-        student.pin = hashPin(newPin);
-      }
-
       await db_saveStudent(student);
       alert('প্রোফাইল তথ্য সফলভাবে আপডেট হয়েছে!');
       setupNavForUser('student', student);
@@ -4525,12 +4314,6 @@
       if (el) el.classList.remove('show');
     }
 
-    function openAdminLoginModal() {
-      document.getElementById('adm-login-email').value = 'rayanbinakter@gmail.com';
-      document.getElementById('adm-login-password').value = '';
-      openModal('modal-admin-login');
-    }
-
     function toggleDropdown() {
       const dd = document.getElementById('user-dropdown');
       if (dd) dd.classList.toggle('show');
@@ -4550,23 +4333,6 @@
     /* =========================================================================
        16. INITIALIZATION & EVENT WIRING
        ========================================================================= */
-    function wireLoginEvents() {
-      const _bl = document.getElementById('btnLogin');
-      if (_bl) {
-        // Remove any old listeners by cloning the node
-        const fresh = _bl.cloneNode(true);
-        _bl.parentNode.replaceChild(fresh, _bl);
-        document.getElementById('btnLogin').addEventListener('click', attemptLogin);
-      }
-
-      const _pin = document.getElementById('li-pin');
-      if (_pin) {
-        _pin.addEventListener('keydown', e => {
-          if (e.key === 'Enter') attemptLogin();
-        });
-      }
-    }
-
     let __appBooted = false;
     async function initApp() {
       if (__appBooted) return;
@@ -4605,7 +4371,6 @@
         showLogin();
       }
 
-      wireLoginEvents();
       updateSyncBadge();
     }
     if (document.readyState === 'loading') {

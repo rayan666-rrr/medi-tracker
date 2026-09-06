@@ -82,31 +82,22 @@
   <!-- Main Content -->
   <main class="max-w-6xl w-full mx-auto mt-8 flex-1">
     
-    <!-- PIN Verification Screen -->
+    <!-- Teacher Sign-In Screen (no shared PIN: Google account IS the credential) -->
     <div id="pin-section" class="max-w-md mx-auto glass-card p-8 text-center mt-12 shadow-2xl">
       <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center mb-5 text-indigo-400">
         <i data-lucide="lock" class="w-7 h-7"></i>
       </div>
-      <h2 class="text-lg font-bold text-white mb-1">Teacher PIN Access</h2>
-      <p class="text-xs text-slate-400 mb-6">Enter the 6-digit admin security PIN to broadcast routines.</p>
-      
-      <form id="pin-form" onsubmit="handlePinSubmit(event)" class="space-y-4">
-        <input 
-          type="password" 
-          id="admin-pin-input" 
-          maxlength="6" 
-          placeholder="••••••" 
-          class="w-full text-center text-2xl tracking-[0.4em] font-mono py-3.5 rounded-xl bg-slate-950/80 border border-white/10 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-          required
-        />
-        <button type="submit" class="w-full py-3 rounded-xl btn-gradient text-white text-sm font-bold flex items-center justify-center gap-2">
-          <i data-lucide="key" class="w-4 h-4"></i> Unlock Admin Panel
-        </button>
-        <p class="text-[11px] text-slate-500">Default Teacher Security PIN: <code class="text-indigo-400 font-mono">123456</code> or <code class="text-indigo-400 font-mono">1234</code></p>
-      </form>
+      <h2 class="text-lg font-bold text-white mb-1">Teacher Access</h2>
+      <p class="text-xs text-slate-400 mb-6">Sign in with the teacher's Google account to broadcast routines. There is no shared PIN — Firestore rules only accept
+        <code id="teacher-email-label" class="text-indigo-400 font-mono"></code>.</p>
+
+      <button id="admin-google-signin" type="button" class="w-full py-3 rounded-xl btn-gradient text-white text-sm font-bold flex items-center justify-center gap-2">
+        <i data-lucide="key" class="w-4 h-4"></i> Sign in with Google
+      </button>
+      <p id="admin-auth-status" class="text-[11px] text-slate-500 mt-4">Firebase Auth লোড হচ্ছে…</p>
     </div>
 
-    <!-- Admin Dashboard View (Hidden until PIN verified) -->
+    <!-- Admin Dashboard View (Hidden until the teacher's Google account is verified) -->
     <div id="admin-view" class="hidden space-y-6">
       
       <!-- Top Broadcast Card -->
@@ -210,7 +201,7 @@
   <!-- Firebase Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     // Firebase configuration from firebase-applet-config.json
@@ -236,11 +227,7 @@
     window.googleProvider = googleProvider;
     window.signInWithPopup = signInWithPopup;
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("Admin logged into Firebase:", user.email || user.uid);
-      }
-    });
+    // Session handling lives with handleGoogleAdminLogin below (teacher-only).
 
     // Default template data
     const TEMPLATES = {
@@ -299,20 +286,72 @@
     };
     window.TEMPLATES = TEMPLATES;
 
-    window.handlePinSubmit = function(e) {
-      e.preventDefault();
-      const pin = document.getElementById('admin-pin-input').value.trim();
-      if (pin === '123456' || pin === '1234') {
-        document.getElementById('pin-section').classList.add('hidden');
-        document.getElementById('admin-view').classList.remove('hidden');
-        document.getElementById('broadcast-date').value = new Date().toISOString().split('T')[0];
-        loadTemplate('Weak-Chapter Filler');
-        showToast('Admin access verified.');
-        lucide.createIcons();
-      } else {
-        alert('Invalid Teacher Security PIN! (Use 123456 or 1234)');
+    // The single teacher/admin Google account — must match isTeacher() in
+    // firestore.rules. Compared case-insensitively. There is NO shared PIN:
+    // the Google account is the credential, verified by Firebase Auth and
+    // re-verified by the security rules on every write.
+    const TEACHER_EMAIL = 'rayanbinakter@gmail.com';
+    const isTeacherEmail = (email) =>
+      String(email || '').trim().toLowerCase() === TEACHER_EMAIL;
+
+    const emailLabel = document.getElementById('teacher-email-label');
+    if (emailLabel) emailLabel.textContent = TEACHER_EMAIL;
+
+    function unlockAdminView() {
+      document.getElementById('pin-section').classList.add('hidden');
+      document.getElementById('admin-view').classList.remove('hidden');
+      document.getElementById('broadcast-date').value = new Date().toISOString().split('T')[0];
+      loadTemplate('Weak-Chapter Filler');
+      showToast('Admin access verified.', 3000, 'ok');
+      lucide.createIcons();
+    }
+
+    window.handleGoogleAdminLogin = async function() {
+      const statusEl = document.getElementById('admin-auth-status');
+      const btn = document.getElementById('admin-google-signin');
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+      if (statusEl) statusEl.textContent = 'Google সাইন-ইন প্রক্রিয়াধীন…';
+      try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        const res = await signInWithPopup(auth, provider);
+        const email = res.user?.email || '';
+        console.log('[ADMIN] signed in as', email);
+        if (isTeacherEmail(email)) {
+          unlockAdminView();
+        } else {
+          showToast('এই অ্যাকাউন্টটি শিক্ষক অ্যাকাউন্ট নয় (' + email + ')।', 5000, 'error');
+          if (statusEl) statusEl.textContent = 'শুধুই শিক্ষক Google অ্যাকাউন্ট (' + TEACHER_EMAIL + ') দিয়ে প্রবেশ করা যাবে।';
+          await signOut(auth);
+        }
+      } catch (err) {
+        const code = err?.code || '';
+        if (code.includes('cancelled-popup-request') || code.includes('popup-closed-by-user')) {
+          if (statusEl) statusEl.textContent = 'সাইন-ইন বাতিল হয়েছে — আবার চেষ্টা করুন।';
+        } else if (code.includes('unauthorized-domain')) {
+          showToast('এই ডোমেইন Authorized domains-এ নেই → Firebase console → Authentication → Settings → Authorized domains → যোগ করুন: ' + location.hostname, 7000, 'error');
+          if (statusEl) statusEl.textContent = 'ডোমেইন অনুমোদিত নয়।';
+        } else if (code.includes('operation-not-allowed')) {
+          showToast('Google সাইন-ইন বন্ধ আছে → Firebase console → Authentication → Sign-in method → Google → Enable', 7000, 'error');
+          if (statusEl) statusEl.textContent = 'Google প্রোভাইডার বন্ধ আছে।';
+        } else {
+          showToast('সাইন-ইন ব্যর্থ: ' + (code || err?.message || err), 5000, 'error');
+          if (statusEl) statusEl.textContent = 'সাইন-ইন ব্যর্থ — আবার চেষ্টা করুন।';
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
       }
     };
+
+    // Already signed in (e.g. reload)? Restore the admin view without a popup.
+    onAuthStateChanged(auth, (user) => {
+      if (user && isTeacherEmail(user.email)) {
+        unlockAdminView();
+      } else if (user) {
+        signOut(auth);
+      }
+    });
+    document.getElementById('admin-google-signin')?.addEventListener('click', handleGoogleAdminLogin);
 
     window.loadTemplate = function(tplName) {
       const tpl = TEMPLATES[tplName] || TEMPLATES['Weak-Chapter Filler'];
@@ -356,20 +395,32 @@
         await setDoc(doc(db, 'routines', dateStr), payload);
         await setDoc(doc(db, 'routines', 'current'), payload);
 
-        showToast(`Study routine published live for ${dateStr}!`);
+        showToast(`Study routine published live for ${dateStr}!`, 3000, 'ok');
       } catch (err) {
         console.error('Publish error:', err);
-        alert('Failed to publish routine: ' + err.message);
+        const code = err?.code || '';
+        if (code.includes('permission-denied')) {
+          showToast('Publish denied by Firestore rules — sign in with the teacher Google account (' + TEACHER_EMAIL + ') and try again.', 7000, 'error');
+        } else if (code.includes('unavailable') || code.includes('network')) {
+          showToast('Publish failed: no network / Firestore unreachable.', 6000, 'error');
+        } else {
+          showToast('Failed to publish routine: ' + (err?.message || err), 6000, 'error');
+        }
       }
     };
 
-    window.showToast = function(msg) {
+    window.showToast = function(msg, duration = 3000, kind = 'info') {
       const toast = document.getElementById('toast');
-      document.getElementById('toast-msg').innerText = msg;
+      const msgEl = document.getElementById('toast-msg');
+      // textContent (never innerHTML): message text can never inject markup.
+      msgEl.textContent = msg;
+      const kindColors = { ok: '#34d399', warn: '#fbbf24', error: '#f87171', info: '#818cf8' };
+      toast.style.borderColor = kindColors[kind] || kindColors.info;
       toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
-      setTimeout(() => {
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => {
         toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
-      }, 3000);
+      }, duration);
     };
 
     lucide.createIcons();
