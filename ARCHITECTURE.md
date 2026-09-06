@@ -22,9 +22,11 @@ medi-tracker/
 ├── package.json                  name "react-example"; dev = `vite --port=3000 --host=0.0.0.0`
 ├── bun.lock                      Bun lockfile (93 KB)
 ├── metadata.json                 AI Studio applet manifest (name/description/capabilities)
-├── firebase-applet-config.json   Real Firebase project creds (linen-math-v6shk)
+├── firebase-applet-config.json   Firebase project creds (gen-lang-client-0089187281;
+│                                 apiKey/appId/senderId are PASTE_* placeholders to fill in)
 ├── firebase-blueprint.json       Entity schema for `student` + `/students/{uid}` mapping
-├── firestore.rules               `/students/{uid}` → allow read, write: if true  ⚠️
+├── firestore.rules               Google-auth rules: own-profile reads/creates,
+│                                 teacher-only roster list + /routines writes, deny-all
 ├── .env.example                  GEMINI_API_KEY, APP_URL
 └── .gitignore                    node_modules, dist, build, coverage, .env*, *.log
 ```
@@ -114,11 +116,12 @@ rank = position of grand total inside `DIST_SAMPLES`.
 
 - Standalone page, **not linked from `index.html`** and not routed by Vite.
 - Uses the **modular** Firebase SDK v10.12.0 (app / auth / firestore) + Tailwind CDN + Lucide icons.
-- Reads real creds inline (matching `firebase-applet-config.json`, project `linen-math-v6shk`,
-  named Firestore DB `ai-studio-medicaltrackerbd-…`).
-- Flow: PIN gate (`handlePinSubmit`, hardcoded `123456` / `1234`) → routine broadcast UI with
-  three JSON templates (`Weak-Chapter Filler`, `Foundation Week`, `Mock-Heavy Final`),
-  a JSON editor, validation, and publish.
+- Reads real creds inline (matching `firebase-applet-config.json`, project
+  `gen-lang-client-0089187281`, default Firestore DB `(default)`).
+- Flow: Google sign-in gate (`handleGoogleAdminLogin`; teacher email checked against
+  `TEACHER_EMAIL`, the only account `isTeacher()` in `firestore.rules` accepts) →
+  routine broadcast UI with three JSON templates (`Weak-Chapter Filler`,
+  `Foundation Week`, `Mock-Heavy Final`), a JSON editor, validation, and publish.
 - Writes to `doc(db, 'routines', <YYYY-MM-DD>)` **and** `doc(db, 'routines', 'current')`.
 
 ---
@@ -142,12 +145,13 @@ rank = position of grand total inside `DIST_SAMPLES`.
    The real values sit in `firebase-applet-config.json` / `admin.html`.
 3. **`src/` React scaffold is dead code** — `package.json`, `vite.config.ts`, `tsconfig.json`,
    Tailwind, lucide-react, motion and `@google/genai` are all installed but unused by the shipped HTML.
-4. **Secrets committed**: real Firebase API key + OAuth client id in `firebase-applet-config.json`
-   and inlined in `admin.html`.
-5. **Auth is cosmetic**: admin password `17514` and admin PINs `123456`/`1234` are hardcoded in
-   client JS; student PINs use a non-cryptographic djb2 hash.
-6. **`firestore.rules` is fully open** (`allow read, write: if true`) on `/students/{uid}`,
-   and has no rule at all for `/routines/*` that `admin.html` writes to.
+4. ~~**Secrets committed**: real Firebase API key…~~ API keys for web apps are public
+   identifiers; the old OAuth client id is cleared and the config is repointed to
+   `gen-lang-client-0089187281` with PASTE_* placeholders for its own values.
+5. ~~**Auth is cosmetic**~~ FIXED: the admin password, demo PINs and djb2 `hashPin` are removed;
+   auth is Google-only and the teacher account is re-verified by `isTeacher()` in the rules.
+6. ~~**`firestore.rules` is fully open**~~ FIXED: signed-in-only access, own-profile student
+   docs (`students/{authUid}`), teacher-only roster list and `/routines` writes, deny-all last.
 7. `initApp()` can run twice (DOMContentLoaded listener + immediate readyState check).
 8. `metadata.json` declares a server-side Gemini capability, but no Gemini call exists in the code,
    and there is no server (`express`/`tsx` are dependencies with no server file).
