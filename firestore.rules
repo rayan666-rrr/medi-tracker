@@ -33,7 +33,7 @@ service cloud.firestore {
     function isTeacher() {
       return isSignedIn()
         && request.auth.token.get('email', '').lower()
-             == 'rayanbinakter@gmail.com';
+             == 'rayanbinakhter@gmail.com';
     }
 
     function isSelf(userId) {
