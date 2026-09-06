@@ -1727,7 +1727,7 @@
       if (!badge) return;
 
       // ── State 1: connected ──────────────────────────────────────────────
-      if (isFirestoreActive) {
+            if (isFirestoreActive || window.MTDB) {
         badge.textContent = '☁ ক্লাউড সিঙ্ক চালু';
         badge.style.color = '#34d399';
         badge.style.cursor = 'default';
@@ -2341,6 +2341,7 @@
         const authUser = res.user;
         const exactEmail = authUser.email || '';
         console.log(`[AUTH] signed in as ${exactEmail}`);
+                const cleanEmail = exactEmail.trim().toLowerCase();
                 if (window.initMTDB) { window.initMTDB(); }
 
         // Admin = the teacher's Google account (single spelling, see
@@ -4339,10 +4340,11 @@
     let __appBooted = false;
     async function initApp() {
       if (__appBooted) return;
-      __appBooted = true;
-      isFirestoreActive = await window.MTDBReady;
+        __appBooted = true;
+      if (!isFirestoreActive) isFirestoreActive = await window.MTDBReady;
+      if (typeof updateSyncBadge === 'function') updateSyncBadge();
+      setInterval(() => { if (typeof updateSyncBadge === 'function') updateSyncBadge(); }, 2000);
       loadState();
-
       let sessionRestored = false;
       if (state.currentUser) {
         if (state.currentUser.role === 'student') {
