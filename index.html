@@ -1346,11 +1346,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import {
-      getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
-      query, where, limit
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     // Firebase was provisioned by AI Studio, and AI Studio OWNS
     // firebase-applet-config.json: it can rotate or re-provision those values.
@@ -1405,6 +1404,7 @@
     window.signOutFirebase = async function() {
       try {
         await signOut(auth);
+        window.MTDBUserEmail = '';
         console.log('[AUTH] signed out');
       } catch (err) {
         console.warn('[AUTH] signOut error:', err);
@@ -1428,6 +1428,7 @@
           const user = result.user;
           // Success clears any previous auth/config block.
           window.MTDBAuthBlocked = null;
+          window.MTDBUserEmail = user.email || '';
           console.log(`[AUTH] signed in as ${user?.email}`);
           if (window.initMTDB) {
             await window.initMTDB();
@@ -1513,11 +1514,13 @@
     // One Firestore API surface, shared by boot and by post-sign-in re-init.
     // It was duplicated in both paths before, which is how the two quietly
     // drifted apart (one gained a method, the other didn't).
+    //
+    // Student documents are keyed by the Firebase Auth uid (students/{uid}),
+    // so there is no email lookup: reading YOUR profile needs only
+    // request.auth.uid == uid, which is exactly what firestore.rules checks.
+    // The old getByEmail() needed collection-wide LIST permission — that was
+    // the hole that let any signed-in student read the whole roster.
     const buildApi = () => ({
-      getByEmail: async (email) => {
-        const s = await getDocs(query(collection(db, 'students'), where('email', '==', email), limit(1)));
-        return s.empty ? null : s.docs[0].data();
-      },
       get:    async (uid) => { const d = await getDoc(doc(db, 'students', uid)); return d.exists() ? d.data() : null; },
       save:   async (student) => { await setDoc(doc(db, 'students', student.id), student, { merge: true }); },
       list:   async () => (await getDocs(collection(db, 'students'))).docs.map(d => d.data()),
@@ -1530,8 +1533,11 @@
       const code = err && err.code ? String(err.code) : '';
       const msg  = err && err.message ? err.message : String(err);
       if (code.includes('permission-denied')) {
-        return 'PERMISSION DENIED → the deployed rules require request.auth != null and nobody is '
-             + 'signed in. Click the amber sync badge to sign in with Google, or deploy firestore.rules.';
+        return 'PERMISSION DENIED → rules allow you to read only your own profile '
+             + '(students/{your-uid}); the teacher may also list the roster. '
+             + 'Nobody signed in? Click the amber sync badge to sign in with Google. '
+             + 'Signed in but still denied? The doc id does not match your uid — deploy '
+             + 'the firestore.rules from this repo and reload.';
       }
       if (code.includes('not-found') || msg.includes('does not exist')) {
         return 'DATABASE NOT FOUND → "' + FIRESTORE_DB_ID + '" does not exist in project '
@@ -1547,9 +1553,18 @@
       return 'UNCLASSIFIED → code=' + (code || '(none)') + ' message=' + msg;
     }
 
+    // Connectivity probe = read your OWN profile doc. A collection-wide list
+    // would need roster permission that students must not have.
+    const probeOwnDoc = async () => {
+      const u = auth.currentUser;
+      if (!u) return false; // nobody signed in → not connected; badge shows "can sign in"
+      await getDoc(doc(db, 'students', u.uid)); // throws on permission/network errors
+      return true;
+    };
+
     window.initMTDB = async () => {
       try {
-        await getDocs(query(collection(db, 'students'), limit(1)));
+        await probeOwnDoc();
         window.MTDB = buildApi();
         window.MTDBError = null;
         if (typeof isFirestoreActive !== 'undefined') isFirestoreActive = true;
@@ -1565,6 +1580,7 @@
 
     window.MTDB = null;
     window.MTDBError = null;
+    window.MTDBUserEmail = '';
     window.MTDBInfo = {
       projectId: firebaseConfig.projectId,
       databaseId: FIRESTORE_DB_ID,
@@ -1575,8 +1591,17 @@
         if (auth.authStateReady) {
           await auth.authStateReady();
         }
-        // connectivity probe - if this throws we stay on localStorage
-        await getDocs(query(collection(db, 'students'), limit(1)));
+        // Track the signed-in account (used by the app's teacher checks).
+        window.MTDBUserEmail = auth.currentUser?.email || '';
+        if (!auth.currentUser) {
+          // Not an error: the app simply starts unconnected and the badge
+          // shows "can sign in". initMTDB() runs after Google sign-in.
+          console.log('[MTDB] No signed-in user yet — cloud sync waits for Google sign-in.');
+          return false;
+        }
+        // connectivity probe = read your own profile doc (a collection-wide
+        // list would require roster permission students must not have).
+        await probeOwnDoc();
         window.MTDB = buildApi();
         console.log('%c[MTDB] ✅ Firestore connected → ' + FIRESTORE_DB_ID + '  (config from ' + boot.source + ')', 'color:#34d399;font-weight:bold');
         return true;
@@ -1589,6 +1614,12 @@
         return false;
       }
     })();
+
+    // Keep the signed-in email fresh (restores, sign-outs) and refresh the badge.
+    onAuthStateChanged(auth, (user) => {
+      window.MTDBUserEmail = user?.email || '';
+      if (typeof updateSyncBadge === 'function') updateSyncBadge();
+    });
   </script>
 
   <!-- =========================================================================
@@ -1733,28 +1764,11 @@
       badge.title = 'Google অ্যাকাউন্ট দিয়ে সাইন-ইন করে ক্লাউড সিঙ্ক চালু করুন';
     }
 
-    // Wrap all student data reads/writes in an async db_ layer
-    async function db_getStudentByEmail(email) {
-      if (!email) return null;
-      const cleanEmail = email.trim().toLowerCase();
-
-      if (window.MTDB) {
-        try {
-          const data = await window.MTDB.getByEmail(cleanEmail);
-          if (data) {
-            const idx = state.profiles.findIndex(p => p.id === data.id);
-            if (idx >= 0) state.profiles[idx] = data;
-            else state.profiles.push(data);
-            saveState();
-            return data;
-          }
-        } catch (err) {
-          console.warn('Firestore read error in db_getStudentByEmail:', err);
-        }
-      }
-      return state.profiles.find(p => p.role === 'student' && (p.email || '').trim().toLowerCase() === cleanEmail) || null;
-    }
-
+    // Wrap all student data reads/writes in an async db_ layer.
+    // There is intentionally NO lookup-by-email: student docs are keyed by the
+    // Firebase Auth uid (students/{uid}), so reading your profile needs only
+    // request.auth.uid == uid. An email query would need collection-wide LIST
+    // permission — the hole that let any signed-in student read the roster.
     async function db_getStudent(uid) {
       if (!uid) return null;
       if (window.MTDB) {
@@ -1803,6 +1817,12 @@
     }
 
     async function db_listStudents() {
+      // Firestore rules allow listing /students only for the teacher. For a
+      // signed-in student this call would always fail, so skip it and use the
+      // local cache instead (admin views are where the roster is needed).
+      if (window.MTDB && !isTeacherEmail(window.MTDBUserEmail)) {
+        return state.profiles.filter(p => p.role === 'student');
+      }
       if (window.MTDB) {
         try {
           const list = await window.MTDB.list();
@@ -2344,21 +2364,17 @@
           return;
         }
 
-        // Look up student by authUid or by email
+        // Look up the student's OWN profile: /students/{authUid}. No email
+        // fallback — the doc id IS the identity, matching the rules
+        // (request.auth.uid == userId).
         let student = null;
         if (authUser.uid) {
           student = await db_getStudent(authUser.uid);
         }
-        if (!student && cleanEmail) {
-          student = await db_getStudentByEmail(cleanEmail);
-        }
-        if (!student) {
-          student = state.profiles.find(p => p.role === 'student' && ((p.authUid && p.authUid === authUser.uid) || (p.email && (p.email || '').trim().toLowerCase() === cleanEmail))) || null;
-        }
 
         if (student) {
-          // Ensure student uses Firebase Auth UID as document ID and authUid
-          const oldId = student.id;
+          // The document id must equal the auth uid (it already does — this is
+          // just belt-and-braces for profiles saved before this migration).
           student.id = authUser.uid;
           student.authUid = authUser.uid;
           student.googleVerified = true;
@@ -2366,9 +2382,6 @@
             student.name = authUser.displayName;
           }
           await db_saveStudent(student);
-          if (oldId && oldId !== authUser.uid) {
-            await db_deleteStudent(oldId);
-          }
 
           if (errEl) {
             errEl.style.color = 'var(--emerald)';
@@ -2542,39 +2555,27 @@
 
     async function handleCreateStudent(e) {
       e.preventDefault();
+      // Google-only: the modal is only opened by openSignUpModalForGoogle(),
+      // so the profile is always created at students/{authUid} with the
+      // authenticated Google email — exactly what creatingOwnProfile() in
+      // firestore.rules demands.
+      if (!pendingGoogleUser || !pendingGoogleUser.uid) {
+        showToast('প্রোফাইল তৈরি করতে Google দিয়ে সাইন-ইন করুন।', 4500, 'warn');
+        return;
+      }
       const name = document.getElementById('su-name').value.trim();
-      const email = document.getElementById('su-email').value.trim().toLowerCase();
+      const email = pendingGoogleUser.email || '';
       const ssc = parseFloat(document.getElementById('su-ssc').value) || 5.00;
       const hsc = parseFloat(document.getElementById('su-hsc').value) || 5.00;
       const isSecondTimer = document.getElementById('su-timer').value === 'true';
 
-      const isGoogleSignup = !!pendingGoogleUser;
-
-      // Check if email already registered via db_
-      const existing = await db_getStudentByEmail(email);
-      if (existing) {
-        if (isGoogleSignup) {
-          existing.authUid = pendingGoogleUser.uid;
-          existing.googleVerified = true;
-          await db_saveStudent(existing);
-          closeModal('modal-signup');
-          pendingGoogleUser = null;
-          await enterStudentApp(existing);
-          return;
-        } else {
-          showToast('এই ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে! অনুগ্রহ করে লগইন করুন।', 4500, 'warn');
-          return;
-        }
-      }
-
-      const studentId = isGoogleSignup ? pendingGoogleUser.uid : ('st-' + Date.now());
-      const authUid = isGoogleSignup ? pendingGoogleUser.uid : null;
+      const studentId = pendingGoogleUser.uid;
 
       const newStudent = {
         role: 'student',
         id: studentId,
-        authUid: authUid,
-        googleVerified: isGoogleSignup,
+        authUid: pendingGoogleUser.uid,
+        googleVerified: true,
         name: name || (pendingGoogleUser ? pendingGoogleUser.displayName : '') || 'শিক্ষার্থী',
         email: email,
         ssc: ssc.toFixed(2),

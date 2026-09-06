@@ -50,16 +50,22 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------
-    // Student profiles, marks, routines, completions
+    // Student profiles, marks, routines, completions.
+    // Documents are keyed by the Firebase Auth uid (students/{authUid}).
     // ---------------------------------------------------------------------------
 
     match /students/{userId} {
-      // Step 2 baseline: any signed-in user may read. Tightened in the next
-      // commit to "own document only (teachers may list the roster)" once the
-      // app stops needing the email lookup.
-      allow read: if isSignedIn();
+      // You can read your own profile doc; the teacher can read any single
+      // profile AND list the roster for the admin console. Other students
+      // CANNOT list the collection — the roster is teacher-only data.
+      allow get: if isSelf(userId) || isTeacher();
+      allow list: if isTeacher();
 
+      // A profile may only be created by its owner (doc id == auth uid AND
+      // profile email == the authenticated Google email) or by the teacher.
       allow create: if creatingOwnProfile(userId) || isTeacher();
+
+      // Owners manage their own data; the teacher manages everyone's.
       allow update, delete: if isSelf(userId) || isTeacher();
     }
 
