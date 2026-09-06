@@ -214,12 +214,15 @@
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     // Firebase configuration from firebase-applet-config.json
+    // (project gen-lang-client-0089187281, default Firestore database).
+    // The three PASTE_ values must be filled in from Firebase console →
+    // Project settings → General → Your apps → SDK setup and configuration.
     const firebaseConfig = {
-      projectId: "linen-math-v6shk",
-      appId: "1:495265888515:web:eb3051b5dccdde9962d136",
-      apiKey: "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
-      authDomain: "linen-math-v6shk.firebaseapp.com",
-      firestoreDatabaseId: "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1"
+      projectId: "gen-lang-client-0089187281",
+      appId: "PASTE_NEW_APP_ID_HERE",
+      apiKey: "PASTE_NEW_API_KEY_HERE",
+      authDomain: "gen-lang-client-0089187281.firebaseapp.com",
+      firestoreDatabaseId: "(default)"
     };
 
     const app = initializeApp(firebaseConfig);
