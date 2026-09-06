@@ -1,42 +1,89 @@
 rules_version = '2';
 
 // =============================================================================
-// ⚠️  TEMPORARY DEVELOPMENT RULES — THESE EXPIRE ON 2026-10-05
-// =============================================================================
-// This app has no Firebase Auth yet: students log in with an email + 4-digit PIN
-// stored inside their own document, so `request.auth` is always null. Any rule
-// requiring authentication would lock out every user.
+// Medi Tracker BD — permanent production rules (no expiry).
 //
-// These rules therefore allow unauthenticated access, which means ANYONE who
-// opens the app can read every student's data. That is acceptable for testing
-// with 3 students. It is NOT acceptable for real use.
+// Model:
+//   • Everyone authenticates with Google (the only enabled provider).
+//   • A student's profile lives at /students/{uid} where {uid} is the Firebase
+//     Auth uid, so "is this your document?" is a plain uid comparison.
+//   • /routines/{docId} is broadcast by admin.html; only the teacher writes it.
 //
-// The `request.time` guard below makes the app fail closed on 2026-10-05 instead
-// of silently staying wide open forever. When it expires, the app returns to
-// offline mode and the sync badge turns amber — that is the reminder to migrate
-// to Firebase Auth, not a bug.
+// Email comparisons are case-insensitive: Google may hand back
+// 'RayanBinakter@gmail.com' and it must still match the teacher address.
+// Every data lookup uses Map.get(key, default) so a MISSING field compares
+// against the default and fails the rule cleanly instead of erroring out.
 // =============================================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Student profiles, marks, routines, completions.
-    // `read` must cover BOTH get and list: the connectivity probe runs
-    //   getDocs(query(collection(db,'students'), limit(1)))
-    // which is a list operation. A get-only rule would keep the app offline.
-    match /students/{uid} {
-      allow read, write: if request.time < timestamp.date(2026, 10, 5);
+    // ---------------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
     }
 
+    // ⬇⬇ THE ONE teacher/admin Google account. If the spelling is ever wrong,
+    // change it here AND in index.html (TEACHER_EMAIL). Case-insensitive.
+    // .get('email','') → an anonymous token has no email claim; comparing ''
+    // simply fails instead of throwing.
+    function isTeacher() {
+      return isSignedIn()
+        && request.auth.token.get('email', '').lower()
+             == 'rayanbinakhter@gmail.com';
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Creating /students/{userId}: allowed only for the signer's OWN profile
+    // (doc id == auth uid) whose email equals the authenticated Google email.
+    // A missing email field → get() returns '' → denied, not an error.
+    function creatingOwnProfile(userId) {
+      return isSelf(userId)
+        && request.resource.data.get('email', '').lower()
+             == request.auth.token.get('email', '').lower();
+    }
+
+    // ---------------------------------------------------------------------------
+    // Student profiles, marks, routines, completions.
+    // Documents are keyed by the Firebase Auth uid (students/{authUid}).
+    // ---------------------------------------------------------------------------
+
+    match /students/{userId} {
+      // You can read your own profile doc; the teacher can read any single
+      // profile AND list the roster for the admin console. Other students
+      // CANNOT list the collection — the roster is teacher-only data.
+      allow get: if isSelf(userId) || isTeacher();
+      allow list: if isTeacher();
+
+      // A profile may only be created by its owner (doc id == auth uid AND
+      // profile email == the authenticated Google email) or by the teacher.
+      allow create: if creatingOwnProfile(userId) || isTeacher();
+
+      // Owners manage their own data; the teacher manages everyone's.
+      allow update, delete: if isSelf(userId) || isTeacher();
+    }
+
+    // ---------------------------------------------------------------------------
     // Routine broadcasts written by admin.html:
     //   setDoc(doc(db, 'routines', <YYYY-MM-DD>))
     //   setDoc(doc(db, 'routines', 'current'))
-    // This collection had no rule at all before, so every broadcast was denied.
+    // ---------------------------------------------------------------------------
+
     match /routines/{docId} {
-      allow read, write: if request.time < timestamp.date(2026, 10, 5);
+      allow read: if isSignedIn();
+      allow write: if isTeacher();
     }
 
-    // Everything else stays denied.
+    // ---------------------------------------------------------------------------
+    // Everything else: denied. Keep last — more specific matches above win.
+    // ---------------------------------------------------------------------------
+
     match /{document=**} {
       allow read, write: if false;
     }
