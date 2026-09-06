@@ -1726,9 +1726,17 @@
        ========================================================================= */
     let isFirestoreActive = false;
 
-    function updateSyncBadge() {
+       function updateSyncBadge() {
       const badge = document.getElementById('sync-badge');
       if (!badge) return;
+      // Like other apps: no status light on the login screen — only show it
+      // inside the app (green = connected, red = something's broken).
+      const loginView = document.getElementById('view-login');
+      if (loginView && !loginView.classList.contains('hidden')) {
+        badge.style.display = 'none';
+        return;
+      }
+      badge.style.display = '';
       if (isFirestoreActive) {
         badge.textContent = '☁ ক্লাউড সিঙ্ক চালু';
         badge.style.color = '#34d399';

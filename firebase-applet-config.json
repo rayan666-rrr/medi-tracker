@@ -1,12 +1,12 @@
 {
-  "projectId": "linen-math-v6shk",
-  "appId": "1:495265888515:web:eb3051b5dccdde9962d136",
-  "apiKey": "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
-  "authDomain": "linen-math-v6shk.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1",
-  "storageBucket": "linen-math-v6shk.firebasestorage.app",
-  "messagingSenderId": "495265888515",
+  "projectId": "gen-lang-client-0089187281",
+  "appId": "1:176173741971:web:9179b2193e584a6f595a66",
+  "apiKey": "AIzaSyAR8RgdUDP6zZDudJtrcFcUNOIN6lw9UPU",
+  "authDomain": "gen-lang-client-0089187281.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "gen-lang-client-0089187281.firebasestorage.app",
+  "messagingSenderId": "176173741971",
   "measurementId": "",
-  "oAuthClientId": "495265888515-sdfr86p2jlntbef1ttdpsd3u5qluqi2a.apps.googleusercontent.com",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }
