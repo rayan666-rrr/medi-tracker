@@ -239,7 +239,19 @@
       gap: 8px;
       animation: fadeInToast 0.25s ease-out;
       pointer-events: auto;
+      max-width: 360px;
     }
+    /* Toast kinds (see showToast(msg, duration, kind)) */
+    .toast .toast-icon { font-weight: 700; flex: 0 0 auto; }
+    .toast-ok   { border-color: #34d399; }
+    .toast-ok .toast-icon   { color: #34d399; }
+    .toast-warn { border-color: #fbbf24; }
+    .toast-warn .toast-icon { color: #fbbf24; }
+    .toast-error { border-color: #f87171; }
+    .toast-error .toast-icon { color: #f87171; }
+    .toast-info { border-color: var(--accent); }
+    .toast-info .toast-icon { color: #818cf8; }
+    .toast-message { word-break: break-word; }
     @keyframes fadeInToast {
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -1471,6 +1483,8 @@
       }
     };
 
+    window.MTDBAuthBlocked = null;
+
     let activeGoogleAuthPromise = null;
 
     window.signInWithGoogleAuth = function() {
@@ -1484,6 +1498,8 @@
           provider.setCustomParameters({ prompt: 'select_account' });
           const result = await signInWithPopup(auth, provider);
           const user = result.user;
+          // Success clears any previous auth/config block.
+          window.MTDBAuthBlocked = null;
           console.log(`[AUTH] signed in as ${user?.email}`);
           if (window.initMTDB) {
             await window.initMTDB();
@@ -1512,6 +1528,11 @@
             };
           }
           console.error('[Auth] Google sign-in failed:', err);
+          // Config-level blockers get their own badge state (offline mode with
+          // the console fix-it path) instead of a generic "click to sign in".
+          if (code === 'auth/unauthorized-domain' || code === 'auth/operation-not-allowed') {
+            window.MTDBAuthBlocked = err;
+          }
           return {
             success: false,
             cancelled: false,
@@ -1525,16 +1546,39 @@
       return activeGoogleAuthPromise;
     };
 
+    // Bengali, actionable hint for a raw auth error code. Exposed on window so
+    // the classic (non-module) app script can use it too.
+    window.authErrorHint = function(rawError) {
+      const code = String(rawError || '');
+      if (code.includes('unauthorized-domain')) {
+        return 'এই ডোমেইন Authorized domains-এ নেই → Firebase console → '
+             + 'Authentication → Settings → Authorized domains → যোগ করুন: '
+             + location.hostname;
+      }
+      if (code.includes('operation-not-allowed')) {
+        return 'Google সাইন-ইন বন্ধ আছে → Firebase console → Authentication '
+             + '→ Sign-in method → Google → Enable করুন';
+      }
+      if (code.includes('popup-blocked')) return 'ব্রাউজারে পপ-আপ ব্লক করা হয়েছে। পপ-আপ অনুমতি দিন।';
+      if (code.includes('network-request-failed')) return 'ইন্টারনেট সংযোগ সমস্যা। সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।';
+      return code || 'অপ্রত্যাশিত ত্রুটি';
+    };
+
     window.signInWithGoogle = async function() {
       const res = await window.signInWithGoogleAuth();
       if (res.success) {
+        window.MTDBAuthBlocked = null;
+        if (typeof updateSyncBadge === 'function') updateSyncBadge();
         if (typeof handleGoogleAuthLogin === 'function') {
           await handleGoogleAuthLogin();
         } else {
           window.location.reload();
         }
       } else if (!res.cancelled) {
-        alert('Google Sign-In Error: ' + res.error);
+        if (typeof showToast === 'function') {
+          showToast('Google সাইন-ইন ব্যর্থ: ' + authErrorHint(res.error), 6000, 'error');
+        }
+        if (typeof updateSyncBadge === 'function') updateSyncBadge();
       }
     };
 
@@ -1586,6 +1630,7 @@
       } catch (e) {
         window.MTDBError = e;
         console.warn('[MTDB] Re-init probe failed →', explainFirestoreError(e));
+        if (typeof updateSyncBadge === 'function') updateSyncBadge();
         return false;
       }
     };
@@ -1726,9 +1771,27 @@
        ========================================================================= */
     let isFirestoreActive = false;
 
+    // Human-readable Firebase console fix-it path for a blocked auth config,
+    // so "offline mode" is never a dead end.
+    function authBlockedConsolePath() {
+      const code = window.MTDBAuthBlocked && window.MTDBAuthBlocked.code
+        ? String(window.MTDBAuthBlocked.code) : '';
+      if (code.includes('unauthorized-domain')) {
+        return 'ফিক্স: Firebase console → Authentication → Settings → '
+             + 'Authorized domains → যোগ করুন: ' + location.hostname;
+      }
+      if (code.includes('operation-not-allowed')) {
+        return 'ফিক্স: Firebase console → Authentication → Sign-in method '
+             + '→ Google → Enable';
+      }
+      return 'ফিক্স: Firebase console → Authentication চেক করুন';
+    }
+
     function updateSyncBadge() {
       const badge = document.getElementById('sync-badge');
       if (!badge) return;
+
+      // ── State 1: connected ──────────────────────────────────────────────
       if (isFirestoreActive) {
         badge.textContent = '☁ ক্লাউড সিঙ্ক চালু';
         badge.style.color = '#34d399';
@@ -1736,20 +1799,36 @@
         badge.style.textDecoration = 'none';
         badge.onclick = null;
         badge.title = 'ক্লাউড ডেটাবেজ সংযুক্ত আছে';
-      } else {
-        badge.textContent = '🔒 সিঙ্ক চালু করতে ক্লিক করুন';
-        badge.style.color = '#fbbf24';
+        return;
+      }
+
+      // Every non-connected state stays retryable: clicking always (re)tries
+      // Google sign-in.
+      badge.onclick = () => {
+        if (typeof window.signInWithGoogle === 'function') {
+          window.signInWithGoogle();
+        } else {
+          showToast('Firebase Auth এখনো লোড হচ্ছে — কিছুক্ষণ পর আবার চেষ্টা করুন।', 4000, 'warn');
+        }
+      };
+
+      // ── State 3: blocked by config (auth/unauthorized-domain or
+      //    auth/operation-not-allowed). Names the console path, still retryable.
+      if (window.MTDBAuthBlocked) {
+        badge.textContent = '⛔ অফলাইন মোড — সাইন-ইন ব্লকড';
+        badge.style.color = '#f87171';
         badge.style.cursor = 'pointer';
         badge.style.textDecoration = 'underline';
-        badge.onclick = () => {
-          if (typeof window.signInWithGoogle === 'function') {
-            window.signInWithGoogle();
-          } else {
-            alert('Firebase Auth লোড হচ্ছে, দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
-          }
-        };
-        badge.title = 'Google অ্যাকাউন্ট দিয়ে সাইন-ইন করে ক্লাউড সিঙ্ক চালু করুন';
+        badge.title = authBlockedConsolePath() + ' — আবার চেষ্টা করতে ক্লিক করুন';
+        return;
       }
+
+      // ── State 2: can sign in ────────────────────────────────────────────
+      badge.textContent = '🔒 সিঙ্ক চালু করতে ক্লিক করুন';
+      badge.style.color = '#fbbf24';
+      badge.style.cursor = 'pointer';
+      badge.style.textDecoration = 'underline';
+      badge.title = 'Google অ্যাকাউন্ট দিয়ে সাইন-ইন করে ক্লাউড সিঙ্ক চালু করুন';
     }
 
     // Wrap all student data reads/writes in an async db_ layer
@@ -1861,7 +1940,18 @@
 
     const STORAGE_KEY = 'medical_tracker_v2';
 
-    function showToast(msg, duration = 3000) {
+    // kind: 'ok' | 'warn' | 'error' | 'info' (default 'info').
+    // Built with createElement + textContent (never innerHTML) so Bengali
+    // strings containing <, > or user data can never inject markup.
+    const TOAST_KINDS = {
+      ok:    { cls: 'toast-ok',    icon: '✓' },
+      warn:  { cls: 'toast-warn',  icon: '⚠' },
+      error: { cls: 'toast-error', icon: '✕' },
+      info:  { cls: 'toast-info',  icon: 'ℹ' }
+    };
+
+    function showToast(msg, duration = 3000, kind = 'info') {
+      const meta = TOAST_KINDS[kind] || TOAST_KINDS.info;
       let container = document.getElementById('toast-container');
       if (!container) {
         container = document.createElement('div');
@@ -1870,8 +1960,18 @@
         document.body.appendChild(container);
       }
       const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.innerHTML = `<span>✨</span><span>${msg}</span>`;
+      toast.className = 'toast ' + meta.cls;
+
+      const icon = document.createElement('span');
+      icon.className = 'toast-icon';
+      icon.textContent = meta.icon;
+
+      const message = document.createElement('span');
+      message.className = 'toast-message';
+      message.textContent = msg;
+
+      toast.appendChild(icon);
+      toast.appendChild(message);
       container.appendChild(toast);
       setTimeout(() => {
         toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -2302,6 +2402,7 @@
 
         const res = await window.signInWithGoogleAuth();
         if (!res.success) {
+          if (typeof updateSyncBadge === 'function') updateSyncBadge();
           if (res.cancelled) {
             if (errEl) {
               errEl.textContent = '';
@@ -2309,12 +2410,7 @@
           } else {
             if (errEl) {
               errEl.style.color = 'var(--rose)';
-              let msg = res.error || 'অপ্রত্যাশিত ত্রুটি';
-              if (msg.includes('popup-blocked')) {
-                msg = 'ব্রাউজারে পপ-আপ ব্লক করা হয়েছে। পপ-আপ অনুমতি দিন।';
-              } else if (msg.includes('network-request-failed')) {
-                msg = 'ইন্টারনেট সংযোগ সমস্যা। সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।';
-              }
+              let msg = authErrorHint(res.error);
               errEl.textContent = 'Google সাইন-ইন ব্যর্থ: ' + msg;
             }
           }
@@ -2541,7 +2637,7 @@
         setupNavForUser('admin', admin);
         navigate('admin-home');
       } else {
-        alert('ভুল অ্যাডমিন ইমেইল বা পাসওয়ার্ড!');
+        showToast('ভুল অ্যাডমিন ইমেইল বা পাসওয়ার্ড!', 4000, 'error');
       }
     }
 
@@ -2652,7 +2748,7 @@
       const isGoogleSignup = !!pendingGoogleUser;
 
       if (!isGoogleSignup && !rawPin) {
-        alert('দয়া করে ৪-সংখ্যার PIN দিন!');
+        showToast('দয়া করে ৪-সংখ্যার PIN দিন!', 4000, 'warn');
         return;
       }
 
@@ -2668,7 +2764,7 @@
           await enterStudentApp(existing);
           return;
         } else {
-          alert('এই ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে! অনুগ্রহ করে লগইন করুন।');
+          showToast('এই ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে! অনুগ্রহ করে লগইন করুন।', 4500, 'warn');
           return;
         }
       }
