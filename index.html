@@ -239,7 +239,19 @@
       gap: 8px;
       animation: fadeInToast 0.25s ease-out;
       pointer-events: auto;
+      max-width: 360px;
     }
+    /* Toast kinds (see showToast(msg, duration, kind)) */
+    .toast .toast-icon { font-weight: 700; flex: 0 0 auto; }
+    .toast-ok   { border-color: #34d399; }
+    .toast-ok .toast-icon   { color: #34d399; }
+    .toast-warn { border-color: #fbbf24; }
+    .toast-warn .toast-icon { color: #fbbf24; }
+    .toast-error { border-color: #f87171; }
+    .toast-error .toast-icon { color: #f87171; }
+    .toast-info { border-color: var(--accent); }
+    .toast-info .toast-icon { color: #818cf8; }
+    .toast-message { word-break: break-word; }
     @keyframes fadeInToast {
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -710,53 +722,12 @@
           <span>Google দিয়ে সাইন ইন করুন</span>
         </button>
 
-        <div style="display: flex; align-items: center; margin-bottom: 20px; color: var(--text-dim); font-size: 12px;">
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
-          <span style="padding: 0 10px;">অথবা ইমেইল ও PIN দিয়ে</span>
-          <div style="flex: 1; height: 1px; background: var(--border);"></div>
-        </div>
+        <!-- Inline status / error line (Google sign-in feedback) -->
+        <div id="li-error" style="color: #f87171; margin-top: 4px; font-size: 13px; text-align: center; min-height: 20px;"></div>
 
-        <form id="student-login-form" onsubmit="event.preventDefault(); attemptLogin();">
-          <div class="form-group">
-            <label class="form-label" for="li-email">ইমেইল</label>
-            <input 
-              type="email" 
-              id="li-email" 
-              class="form-input" 
-              placeholder="আপনার ইমেইল দিন" 
-              oninput="handleLoginEmailInput(event)" 
-              required 
-              autocomplete="email" 
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="li-pin">৪-সংখ্যার PIN</label>
-            <input 
-              type="password" 
-              id="li-pin" 
-              class="form-input" 
-              maxlength="4" 
-              inputmode="numeric" 
-              pattern="[0-9]*" 
-              placeholder="••••" 
-              required 
-              autocomplete="current-password" 
-              style="font-size: 24px; letter-spacing: 8px; text-align: center; padding: 8px 14px;" 
-            />
-          </div>
-
-          <button type="button" id="btnLogin" class="btn btn-secondary btn-block" style="padding: 11px; font-size: 14px; font-weight: 600;">
-            প্রবেশ করো (PIN)
-          </button>
-
-          <!-- Inline error / signup prompt -->
-          <div id="li-error" style="color: #f87171; margin-top: 14px; font-size: 13px; text-align: center; min-height: 20px;"></div>
-        </form>
-
-        <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="openSignUpModal()">+ নতুন শিক্ষার্থী যোগ করো</button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="openAdminLoginModal()" style="color: var(--text-muted);">🛡️ অ্যাডমিন লগইন</button>
+        <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; font-size: 12px; color: var(--text-dim); text-align: center; line-height: 1.7;">
+          শিক্ষার্থী: প্রথমবার Google দিয়ে সাইন-ইন করলেই প্রোফাইল তৈরি হবে।<br/>
+          শিক্ষক/অ্যাডমিন: শিক্ষক Google অ্যাকাউন্ট দিয়ে লগইন করলেই অ্যাডমিন প্যানেল খুলবে।
         </div>
       </div>
     </section>
@@ -1061,11 +1032,6 @@
               <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">পিন কোড (ঐচ্ছিক ৪-সংখ্যার PIN)</label>
-            <input type="password" id="set-pin" maxlength="4" class="form-input" placeholder="খালি রাখলে পিন অপরিবর্তিত থাকবে" />
-          </div>
-
           <!-- 200 Scale Toggle Row -->
           <div class="form-group" style="background: var(--card-elevated); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
             <div>
@@ -1345,11 +1311,6 @@
             <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
           </select>
         </div>
-        <div class="form-group" id="su-pin-group">
-          <label class="form-label">৪-সংখ্যার PIN (লগইনের জন্য)</label>
-          <input type="password" id="su-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" class="form-input" placeholder="৪-সংখ্যার পিন দিন" required />
-        </div>
-
         <!-- Live GPA Preview -->
         <div style="background: var(--card-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--accent-border); margin-bottom: 20px; font-size: 13px;">
           <div style="color: var(--text-muted); margin-bottom: 4px;">লাইভ GPA স্কোর হিসাব (১০০ তে):</div>
@@ -1357,27 +1318,6 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">শুরু করো</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 2. Admin Login Modal -->
-  <div class="modal-backdrop" id="modal-admin-login">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 class="modal-title">🛡️ অ্যাডমিন লগইন</h3>
-        <button class="close-btn" onclick="closeModal('modal-admin-login')">✕</button>
-      </div>
-      <form onsubmit="handleAdminLogin(event)">
-        <div class="form-group">
-          <label class="form-label">অ্যাডমিন ইমেইল</label>
-          <input type="email" id="adm-login-email" class="form-input" value="rayanbinakter@gmail.com" placeholder="rayanbinakter@gmail.com" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">পাসওয়ার্ড</label>
-          <input type="password" id="adm-login-password" class="form-input" value="" placeholder="পাসওয়ার্ড লিখুন" required />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">লগইন করুন</button>
       </form>
     </div>
   </div>
@@ -1406,11 +1346,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import {
-      getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
-      query, where, limit
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     // Firebase was provisioned by AI Studio, and AI Studio OWNS
     // firebase-applet-config.json: it can rotate or re-provision those values.
@@ -1418,13 +1357,13 @@
     // real file is read at runtime and the literals below are a last-resort
     // fallback for when the fetch itself fails (file:// , offline, bad deploy).
     const FALLBACK_CONFIG = {
-      apiKey: "AIzaSyDVhjhOc5uFAz-0uuHNsaSoPBP8UfA0Z7A",
-      authDomain: "linen-math-v6shk.firebaseapp.com",
-      projectId: "linen-math-v6shk",
-      storageBucket: "linen-math-v6shk.firebasestorage.app",
-      messagingSenderId: "495265888515",
-      appId: "1:495265888515:web:eb3051b5dccdde9962d136",
-      firestoreDatabaseId: "ai-studio-medicaltrackerbd-74a36dc8-bb14-40cd-a17d-522eb9ae35f1"
+      apiKey: "PASTE_NEW_API_KEY_HERE",
+      authDomain: "gen-lang-client-0089187281.firebaseapp.com",
+      projectId: "gen-lang-client-0089187281",
+      storageBucket: "gen-lang-client-0089187281.firebasestorage.app",
+      messagingSenderId: "PASTE_NEW_SENDER_ID_HERE",
+      appId: "PASTE_NEW_APP_ID_HERE",
+      firestoreDatabaseId: "(default)"
     };
 
     async function loadAppletConfig() {
@@ -1465,11 +1404,14 @@
     window.signOutFirebase = async function() {
       try {
         await signOut(auth);
+        window.MTDBUserEmail = '';
         console.log('[AUTH] signed out');
       } catch (err) {
         console.warn('[AUTH] signOut error:', err);
       }
     };
+
+    window.MTDBAuthBlocked = null;
 
     let activeGoogleAuthPromise = null;
 
@@ -1484,6 +1426,9 @@
           provider.setCustomParameters({ prompt: 'select_account' });
           const result = await signInWithPopup(auth, provider);
           const user = result.user;
+          // Success clears any previous auth/config block.
+          window.MTDBAuthBlocked = null;
+          window.MTDBUserEmail = user.email || '';
           console.log(`[AUTH] signed in as ${user?.email}`);
           if (window.initMTDB) {
             await window.initMTDB();
@@ -1512,6 +1457,11 @@
             };
           }
           console.error('[Auth] Google sign-in failed:', err);
+          // Config-level blockers get their own badge state (offline mode with
+          // the console fix-it path) instead of a generic "click to sign in".
+          if (code === 'auth/unauthorized-domain' || code === 'auth/operation-not-allowed') {
+            window.MTDBAuthBlocked = err;
+          }
           return {
             success: false,
             cancelled: false,
@@ -1525,27 +1475,52 @@
       return activeGoogleAuthPromise;
     };
 
+    // Bengali, actionable hint for a raw auth error code. Exposed on window so
+    // the classic (non-module) app script can use it too.
+    window.authErrorHint = function(rawError) {
+      const code = String(rawError || '');
+      if (code.includes('unauthorized-domain')) {
+        return 'এই ডোমেইন Authorized domains-এ নেই → Firebase console → '
+             + 'Authentication → Settings → Authorized domains → যোগ করুন: '
+             + location.hostname;
+      }
+      if (code.includes('operation-not-allowed')) {
+        return 'Google সাইন-ইন বন্ধ আছে → Firebase console → Authentication '
+             + '→ Sign-in method → Google → Enable করুন';
+      }
+      if (code.includes('popup-blocked')) return 'ব্রাউজারে পপ-আপ ব্লক করা হয়েছে। পপ-আপ অনুমতি দিন।';
+      if (code.includes('network-request-failed')) return 'ইন্টারনেট সংযোগ সমস্যা। সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।';
+      return code || 'অপ্রত্যাশিত ত্রুটি';
+    };
+
     window.signInWithGoogle = async function() {
       const res = await window.signInWithGoogleAuth();
       if (res.success) {
+        window.MTDBAuthBlocked = null;
+        if (typeof updateSyncBadge === 'function') updateSyncBadge();
         if (typeof handleGoogleAuthLogin === 'function') {
           await handleGoogleAuthLogin();
         } else {
           window.location.reload();
         }
       } else if (!res.cancelled) {
-        alert('Google Sign-In Error: ' + res.error);
+        if (typeof showToast === 'function') {
+          showToast('Google সাইন-ইন ব্যর্থ: ' + authErrorHint(res.error), 6000, 'error');
+        }
+        if (typeof updateSyncBadge === 'function') updateSyncBadge();
       }
     };
 
     // One Firestore API surface, shared by boot and by post-sign-in re-init.
     // It was duplicated in both paths before, which is how the two quietly
     // drifted apart (one gained a method, the other didn't).
+    //
+    // Student documents are keyed by the Firebase Auth uid (students/{uid}),
+    // so there is no email lookup: reading YOUR profile needs only
+    // request.auth.uid == uid, which is exactly what firestore.rules checks.
+    // The old getByEmail() needed collection-wide LIST permission — that was
+    // the hole that let any signed-in student read the whole roster.
     const buildApi = () => ({
-      getByEmail: async (email) => {
-        const s = await getDocs(query(collection(db, 'students'), where('email', '==', email), limit(1)));
-        return s.empty ? null : s.docs[0].data();
-      },
       get:    async (uid) => { const d = await getDoc(doc(db, 'students', uid)); return d.exists() ? d.data() : null; },
       save:   async (student) => { await setDoc(doc(db, 'students', student.id), student, { merge: true }); },
       list:   async () => (await getDocs(collection(db, 'students'))).docs.map(d => d.data()),
@@ -1558,8 +1533,11 @@
       const code = err && err.code ? String(err.code) : '';
       const msg  = err && err.message ? err.message : String(err);
       if (code.includes('permission-denied')) {
-        return 'PERMISSION DENIED → the deployed rules require request.auth != null and nobody is '
-             + 'signed in. Click the amber sync badge to sign in with Google, or deploy firestore.rules.';
+        return 'PERMISSION DENIED → rules allow you to read only your own profile '
+             + '(students/{your-uid}); the teacher may also list the roster. '
+             + 'Nobody signed in? Click the amber sync badge to sign in with Google. '
+             + 'Signed in but still denied? The doc id does not match your uid — deploy '
+             + 'the firestore.rules from this repo and reload.';
       }
       if (code.includes('not-found') || msg.includes('does not exist')) {
         return 'DATABASE NOT FOUND → "' + FIRESTORE_DB_ID + '" does not exist in project '
@@ -1575,9 +1553,18 @@
       return 'UNCLASSIFIED → code=' + (code || '(none)') + ' message=' + msg;
     }
 
+    // Connectivity probe = read your OWN profile doc. A collection-wide list
+    // would need roster permission that students must not have.
+    const probeOwnDoc = async () => {
+      const u = auth.currentUser;
+      if (!u) return false; // nobody signed in → not connected; badge shows "can sign in"
+      await getDoc(doc(db, 'students', u.uid)); // throws on permission/network errors
+      return true;
+    };
+
     window.initMTDB = async () => {
       try {
-        await getDocs(query(collection(db, 'students'), limit(1)));
+        await probeOwnDoc();
         window.MTDB = buildApi();
         window.MTDBError = null;
         if (typeof isFirestoreActive !== 'undefined') isFirestoreActive = true;
@@ -1586,12 +1573,14 @@
       } catch (e) {
         window.MTDBError = e;
         console.warn('[MTDB] Re-init probe failed →', explainFirestoreError(e));
+        if (typeof updateSyncBadge === 'function') updateSyncBadge();
         return false;
       }
     };
 
     window.MTDB = null;
     window.MTDBError = null;
+    window.MTDBUserEmail = '';
     window.MTDBInfo = {
       projectId: firebaseConfig.projectId,
       databaseId: FIRESTORE_DB_ID,
@@ -1602,8 +1591,17 @@
         if (auth.authStateReady) {
           await auth.authStateReady();
         }
-        // connectivity probe - if this throws we stay on localStorage
-        await getDocs(query(collection(db, 'students'), limit(1)));
+        // Track the signed-in account (used by the app's teacher checks).
+        window.MTDBUserEmail = auth.currentUser?.email || '';
+        if (!auth.currentUser) {
+          // Not an error: the app simply starts unconnected and the badge
+          // shows "can sign in". initMTDB() runs after Google sign-in.
+          console.log('[MTDB] No signed-in user yet — cloud sync waits for Google sign-in.');
+          return false;
+        }
+        // connectivity probe = read your own profile doc (a collection-wide
+        // list would require roster permission students must not have).
+        await probeOwnDoc();
         window.MTDB = buildApi();
         console.log('%c[MTDB] ✅ Firestore connected → ' + FIRESTORE_DB_ID + '  (config from ' + boot.source + ')', 'color:#34d399;font-weight:bold');
         return true;
@@ -1616,6 +1614,12 @@
         return false;
       }
     })();
+
+    // Keep the signed-in email fresh (restores, sign-outs) and refresh the badge.
+    onAuthStateChanged(auth, (user) => {
+      window.MTDBUserEmail = user?.email || '';
+      if (typeof updateSyncBadge === 'function') updateSyncBadge();
+    });
   </script>
 
   <!-- =========================================================================
@@ -1625,42 +1629,16 @@
     /* =========================================================================
        1. SHARED UTILITIES, CONSTANTS & SYLLABUS DATA
        ========================================================================= */
-    function hashPin(pin) {
-      let h = 5381;
-      for (let i = 0; i < pin.length; i++) h = ((h << 5) + h + pin.charCodeAt(i)) | 0;
-      return 'h' + (h >>> 0).toString(16);
+    // The single teacher/admin Google account. Must match isTeacher() in
+    // firestore.rules. Compared case-insensitively (isTeacherEmail()).
+    // NOTE: no passwords or PINs exist anywhere in this app any more — the
+    // teacher is whoever signs in with this exact Google account, verified by
+    // Firebase Auth (and re-verified by the security rules on every write).
+    const TEACHER_EMAIL = 'rayanbinakhter@gmail.com';
+
+    function isTeacherEmail(email) {
+      return String(email || '').trim().toLowerCase() === TEACHER_EMAIL;
     }
-
-    const SEED_STUDENTS = [
-      { id: 's_rayan', name: 'রায়ান', email: 'rayanbinakhter@gmail.com', pinHash: hashPin('1122') },
-      { id: 's_faria', name: 'ফারিয়া', email: 'farialaboni@gmail.com', pinHash: hashPin('2233') },
-      { id: 's_sneha', name: 'স্নেহা', email: 'sneha@gmail.com', pinHash: hashPin('3344') }
-    ];
-
-    function seedStudents() {
-      if (localStorage.getItem('medtrack_seeded_v2') === '1') {
-        console.log('Already seeded');
-        return;
-      }
-      const existing = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
-      if (existing.length > 0) {
-        localStorage.setItem('medtrack_seeded_v2', '1');
-        return;
-      }
-      const seeds = SEED_STUDENTS.map(s => ({
-        ...s, role: 'student',
-        ssc: 0, hsc: 0, isSecondTimer: false,
-        marks: [], routines: [], completions: [],
-        streak: 0, lastActive: null,
-        createdAt: new Date().toISOString().slice(0, 10)
-      }));
-      localStorage.setItem('medtrack_students', JSON.stringify(seeds));
-      localStorage.setItem('medtrack_seeded_v2', '1');
-      console.log('✓ Seeded 3 students:', seeds.map(s => s.email));
-    }
-
-    // Call seedStudents() ONCE at the very start of script
-    seedStudents();
 
     const SYLLABUS = [
       ['phy1','ভৌতজগৎ ও পরিমাপ'],['phy1','ভেক্টর'],['phy1','গতিবিদ্যা'],
@@ -1726,9 +1704,27 @@
        ========================================================================= */
     let isFirestoreActive = false;
 
+    // Human-readable Firebase console fix-it path for a blocked auth config,
+    // so "offline mode" is never a dead end.
+    function authBlockedConsolePath() {
+      const code = window.MTDBAuthBlocked && window.MTDBAuthBlocked.code
+        ? String(window.MTDBAuthBlocked.code) : '';
+      if (code.includes('unauthorized-domain')) {
+        return 'ফিক্স: Firebase console → Authentication → Settings → '
+             + 'Authorized domains → যোগ করুন: ' + location.hostname;
+      }
+      if (code.includes('operation-not-allowed')) {
+        return 'ফিক্স: Firebase console → Authentication → Sign-in method '
+             + '→ Google → Enable';
+      }
+      return 'ফিক্স: Firebase console → Authentication চেক করুন';
+    }
+
     function updateSyncBadge() {
       const badge = document.getElementById('sync-badge');
       if (!badge) return;
+
+      // ── State 1: connected ──────────────────────────────────────────────
       if (isFirestoreActive) {
         badge.textContent = '☁ ক্লাউড সিঙ্ক চালু';
         badge.style.color = '#34d399';
@@ -1736,44 +1732,43 @@
         badge.style.textDecoration = 'none';
         badge.onclick = null;
         badge.title = 'ক্লাউড ডেটাবেজ সংযুক্ত আছে';
-      } else {
-        badge.textContent = '🔒 সিঙ্ক চালু করতে ক্লিক করুন';
-        badge.style.color = '#fbbf24';
+        return;
+      }
+
+      // Every non-connected state stays retryable: clicking always (re)tries
+      // Google sign-in.
+      badge.onclick = () => {
+        if (typeof window.signInWithGoogle === 'function') {
+          window.signInWithGoogle();
+        } else {
+          showToast('Firebase Auth এখনো লোড হচ্ছে — কিছুক্ষণ পর আবার চেষ্টা করুন।', 4000, 'warn');
+        }
+      };
+
+      // ── State 3: blocked by config (auth/unauthorized-domain or
+      //    auth/operation-not-allowed). Names the console path, still retryable.
+      if (window.MTDBAuthBlocked) {
+        badge.textContent = '⛔ অফলাইন মোড — সাইন-ইন ব্লকড';
+        badge.style.color = '#f87171';
         badge.style.cursor = 'pointer';
         badge.style.textDecoration = 'underline';
-        badge.onclick = () => {
-          if (typeof window.signInWithGoogle === 'function') {
-            window.signInWithGoogle();
-          } else {
-            alert('Firebase Auth লোড হচ্ছে, দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।');
-          }
-        };
-        badge.title = 'Google অ্যাকাউন্ট দিয়ে সাইন-ইন করে ক্লাউড সিঙ্ক চালু করুন';
+        badge.title = authBlockedConsolePath() + ' — আবার চেষ্টা করতে ক্লিক করুন';
+        return;
       }
+
+      // ── State 2: can sign in ────────────────────────────────────────────
+      badge.textContent = '🔒 সিঙ্ক চালু করতে ক্লিক করুন';
+      badge.style.color = '#fbbf24';
+      badge.style.cursor = 'pointer';
+      badge.style.textDecoration = 'underline';
+      badge.title = 'Google অ্যাকাউন্ট দিয়ে সাইন-ইন করে ক্লাউড সিঙ্ক চালু করুন';
     }
 
-    // Wrap all student data reads/writes in an async db_ layer
-    async function db_getStudentByEmail(email) {
-      if (!email) return null;
-      const cleanEmail = email.trim().toLowerCase();
-
-      if (window.MTDB) {
-        try {
-          const data = await window.MTDB.getByEmail(cleanEmail);
-          if (data) {
-            const idx = state.profiles.findIndex(p => p.id === data.id);
-            if (idx >= 0) state.profiles[idx] = data;
-            else state.profiles.push(data);
-            saveState();
-            return data;
-          }
-        } catch (err) {
-          console.warn('Firestore read error in db_getStudentByEmail:', err);
-        }
-      }
-      return state.profiles.find(p => p.role === 'student' && (p.email || '').trim().toLowerCase() === cleanEmail) || null;
-    }
-
+    // Wrap all student data reads/writes in an async db_ layer.
+    // There is intentionally NO lookup-by-email: student docs are keyed by the
+    // Firebase Auth uid (students/{uid}), so reading your profile needs only
+    // request.auth.uid == uid. An email query would need collection-wide LIST
+    // permission — the hole that let any signed-in student read the roster.
     async function db_getStudent(uid) {
       if (!uid) return null;
       if (window.MTDB) {
@@ -1822,6 +1817,12 @@
     }
 
     async function db_listStudents() {
+      // Firestore rules allow listing /students only for the teacher. For a
+      // signed-in student this call would always fail, so skip it and use the
+      // local cache instead (admin views are where the roster is needed).
+      if (window.MTDB && !isTeacherEmail(window.MTDBUserEmail)) {
+        return state.profiles.filter(p => p.role === 'student');
+      }
       if (window.MTDB) {
         try {
           const list = await window.MTDB.list();
@@ -1861,7 +1862,18 @@
 
     const STORAGE_KEY = 'medical_tracker_v2';
 
-    function showToast(msg, duration = 3000) {
+    // kind: 'ok' | 'warn' | 'error' | 'info' (default 'info').
+    // Built with createElement + textContent (never innerHTML) so Bengali
+    // strings containing <, > or user data can never inject markup.
+    const TOAST_KINDS = {
+      ok:    { cls: 'toast-ok',    icon: '✓' },
+      warn:  { cls: 'toast-warn',  icon: '⚠' },
+      error: { cls: 'toast-error', icon: '✕' },
+      info:  { cls: 'toast-info',  icon: 'ℹ' }
+    };
+
+    function showToast(msg, duration = 3000, kind = 'info') {
+      const meta = TOAST_KINDS[kind] || TOAST_KINDS.info;
       let container = document.getElementById('toast-container');
       if (!container) {
         container = document.createElement('div');
@@ -1870,8 +1882,18 @@
         document.body.appendChild(container);
       }
       const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.innerHTML = `<span>✨</span><span>${msg}</span>`;
+      toast.className = 'toast ' + meta.cls;
+
+      const icon = document.createElement('span');
+      icon.className = 'toast-icon';
+      icon.textContent = meta.icon;
+
+      const message = document.createElement('span');
+      message.className = 'toast-message';
+      message.textContent = msg;
+
+      toast.appendChild(icon);
+      toast.appendChild(message);
       container.appendChild(toast);
       setTimeout(() => {
         toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -1883,7 +1905,10 @@
 
     let state = {
       profiles: [
-        { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' }
+        // Role marker only — there is NO password. Admin access is granted
+        // exclusively by signing in with the teacher's Google account
+        // (TEACHER_EMAIL, enforced again by firestore.rules isTeacher()).
+        { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: TEACHER_EMAIL }
       ],
       currentUser: null
     };
@@ -1957,12 +1982,10 @@
 
       let admin = state.profiles.find(p => p.role === 'admin');
       if (!admin) {
-        state.profiles.unshift({ role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: 'rayanbinakter@gmail.com', password: '17514' });
-      } else {
-        // Guarantee fixed admin credentials
-        admin.email = 'rayanbinakter@gmail.com';
-        admin.password = '17514';
+        state.profiles.unshift({ role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: TEACHER_EMAIL });
       }
+      // Strip any password left over from older local state.
+      state.profiles.forEach(p => { if (p.password !== undefined) delete p.password; });
     }
 
     function saveState() {
@@ -2264,11 +2287,7 @@
 
     function renderLoginScreen() {
       document.getElementById('top-nav').classList.add('hidden');
-      const emailInput = document.getElementById('li-email');
-      const pinInput = document.getElementById('li-pin');
       const msgEl = document.getElementById('li-error');
-      if (emailInput) emailInput.value = '';
-      if (pinInput) pinInput.value = '';
       if (msgEl) msgEl.textContent = '';
     }
 
@@ -2302,6 +2321,7 @@
 
         const res = await window.signInWithGoogleAuth();
         if (!res.success) {
+          if (typeof updateSyncBadge === 'function') updateSyncBadge();
           if (res.cancelled) {
             if (errEl) {
               errEl.textContent = '';
@@ -2309,12 +2329,7 @@
           } else {
             if (errEl) {
               errEl.style.color = 'var(--rose)';
-              let msg = res.error || 'অপ্রত্যাশিত ত্রুটি';
-              if (msg.includes('popup-blocked')) {
-                msg = 'ব্রাউজারে পপ-আপ ব্লক করা হয়েছে। পপ-আপ অনুমতি দিন।';
-              } else if (msg.includes('network-request-failed')) {
-                msg = 'ইন্টারনেট সংযোগ সমস্যা। সংযোগ পরীক্ষা করে পুনরায় চেষ্টা করুন।';
-              }
+              let msg = authErrorHint(res.error);
               errEl.textContent = 'Google সাইন-ইন ব্যর্থ: ' + msg;
             }
           }
@@ -2326,8 +2341,9 @@
         console.log(`[AUTH] signed in as ${exactEmail}`);
         const cleanEmail = exactEmail.trim().toLowerCase();
 
-        // Check if email is Admin (accepts both rayanbinakter@gmail.com and rayanbinakhter@gmail.com)
-        if (cleanEmail === 'rayanbinakter@gmail.com' || cleanEmail === 'rayanbinakhter@gmail.com') {
+        // Admin = the teacher's Google account (single spelling, see
+        // TEACHER_EMAIL; firestore.rules isTeacher() enforces the same).
+        if (isTeacherEmail(cleanEmail)) {
           let admin = state.profiles.find(p => p.role === 'admin');
           if (!admin) {
             admin = { role: 'admin', id: 'admin-1', name: authUser.displayName || 'অ্যাডমিন', email: cleanEmail };
@@ -2348,21 +2364,17 @@
           return;
         }
 
-        // Look up student by authUid or by email
+        // Look up the student's OWN profile: /students/{authUid}. No email
+        // fallback — the doc id IS the identity, matching the rules
+        // (request.auth.uid == userId).
         let student = null;
         if (authUser.uid) {
           student = await db_getStudent(authUser.uid);
         }
-        if (!student && cleanEmail) {
-          student = await db_getStudentByEmail(cleanEmail);
-        }
-        if (!student) {
-          student = state.profiles.find(p => p.role === 'student' && ((p.authUid && p.authUid === authUser.uid) || (p.email && (p.email || '').trim().toLowerCase() === cleanEmail))) || null;
-        }
 
         if (student) {
-          // Ensure student uses Firebase Auth UID as document ID and authUid
-          const oldId = student.id;
+          // The document id must equal the auth uid (it already does — this is
+          // just belt-and-braces for profiles saved before this migration).
           student.id = authUser.uid;
           student.authUid = authUser.uid;
           student.googleVerified = true;
@@ -2370,9 +2382,6 @@
             student.name = authUser.displayName;
           }
           await db_saveStudent(student);
-          if (oldId && oldId !== authUser.uid) {
-            await db_deleteStudent(oldId);
-          }
 
           if (errEl) {
             errEl.style.color = 'var(--emerald)';
@@ -2402,8 +2411,6 @@
       const sscInput = document.getElementById('su-ssc');
       const hscInput = document.getElementById('su-hsc');
       const timerInput = document.getElementById('su-timer');
-      const pinInput = document.getElementById('su-pin');
-      const pinGroup = document.getElementById('su-pin-group');
 
       if (modalTitle) modalTitle.textContent = 'Google শিক্ষার্থী প্রোফাইল সম্পন্ন করুন';
       if (nameInput) nameInput.value = authUser.displayName || '';
@@ -2416,29 +2423,9 @@
       if (sscInput) sscInput.value = '5.00';
       if (hscInput) hscInput.value = '5.00';
       if (timerInput) timerInput.value = 'false';
-      if (pinGroup) pinGroup.style.display = 'none';
-      if (pinInput) {
-        pinInput.required = false;
-        pinInput.value = '';
-      }
 
       updateLiveGpaPreview();
       openModal('modal-signup');
-    }
-
-    function handleLoginEmailInput(e) {
-      const email = e.target.value.trim();
-      const msgEl = document.getElementById('li-error');
-      if (msgEl) msgEl.textContent = '';
-
-      // Auto-focus PIN field when a valid email format is entered
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailPattern.test(email)) {
-        const pinInput = document.getElementById('li-pin');
-        if (pinInput && document.activeElement === e.target) {
-          pinInput.focus();
-        }
-      }
     }
 
     function openSignUpWithEmail(rawEmail) {
@@ -2450,55 +2437,6 @@
           document.getElementById('su-email').value = rawEmail;
         }
       }
-    }
-
-    function attemptLogin() {
-      const errEl = document.getElementById('li-error');
-      const emailRaw = document.getElementById('li-email').value;
-      const pinRaw  = document.getElementById('li-pin').value;
-      const email = emailRaw.trim().toLowerCase();
-      const pin   = pinRaw.trim();
-
-      console.log('[login] attempt', { email, pin });
-
-      // 1. Visible feedback IMMEDIATELY — proves click handler fired
-      errEl.style.color = 'var(--text-dim)';
-      errEl.textContent = 'যাচাই হচ্ছে…';
-
-      setTimeout(() => {
-        // 2. Read storage
-        const all = JSON.parse(localStorage.getItem('medtrack_students') || '[]');
-        console.log('[login] students in storage:', all.length, all.map(s => s.email));
-
-        if (!all.length) {
-          errEl.style.color = 'var(--rose)';
-          errEl.textContent = '✗ storage খালি — seedStudents() রান হয়নি';
-          return;
-        }
-
-        // 3. Find student by email
-        const stu = all.find(s => s.email && s.email.toLowerCase() === email);
-        if (!stu) {
-          errEl.style.color = 'var(--rose)';
-          errEl.textContent = '✗ এই ইমেইলে কোনো অ্যাকাউন্ট নেই';
-          return;
-        }
-
-        // 4. Compare PIN hash
-        const hashed = hashPin(pin);
-        console.log('[login] hash check', { hashed, stored: stu.pinHash, ok: hashed === stu.pinHash });
-        if (hashed !== stu.pinHash) {
-          errEl.style.color = 'var(--rose)';
-          errEl.textContent = '✗ ভুল পিন';
-          return;
-        }
-
-        // 5. Success
-        errEl.style.color = 'var(--emerald)';
-        errEl.textContent = '✓ সফল! ঢুকছো…';
-        session.user = { role: 'student', id: stu.id };
-        setTimeout(() => enterStudentApp(stu), 250);
-      }, 50);
     }
 
     async function enterStudentApp(stu) {
@@ -2521,29 +2459,11 @@
       navigate('home');
     }
 
-    function handleAdminLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('adm-login-email').value.trim().toLowerCase();
-      const pass = document.getElementById('adm-login-password').value.trim();
-
-      // Fixed admin credentials: rayanbinakter@gmail.com / rayanbinakhter@gmail.com with PIN 17514
-      if ((email === 'rayanbinakter@gmail.com' || email === 'rayanbinakhter@gmail.com') && pass === '17514') {
-        closeModal('modal-admin-login');
-        let admin = state.profiles.find(p => p.role === 'admin');
-        if (!admin) {
-          admin = { role: 'admin', id: 'admin-1', name: 'অ্যাডমিন', email: email, password: '17514' };
-          state.profiles.unshift(admin);
-        } else {
-          admin.email = email;
-        }
-        state.currentUser = { role: 'admin', id: admin.id };
-        saveState();
-        setupNavForUser('admin', admin);
-        navigate('admin-home');
-      } else {
-        alert('ভুল অ্যাডমিন ইমেইল বা পাসওয়ার্ড!');
-      }
-    }
+    // handleAdminLogin() was removed: there is no shared admin password any
+    // more. Admin access happens exclusively through Google sign-in —
+    // handleGoogleAuthLogin() routes TEACHER_EMAIL to the admin panel, and
+    // firestore.rules isTeacher() independently enforces the same account on
+    // every privileged Firestore write.
 
     function setupNavForUser(role, user) {
       const topNav = document.getElementById('top-nav');
@@ -2602,8 +2522,6 @@
       const sscInput = document.getElementById('su-ssc');
       const hscInput = document.getElementById('su-hsc');
       const timerInput = document.getElementById('su-timer');
-      const pinInput = document.getElementById('su-pin');
-      const pinGroup = document.getElementById('su-pin-group');
 
       if (modalTitle) modalTitle.textContent = 'নতুন শিক্ষার্থী যোগ করুন';
       if (nameInput) nameInput.value = '';
@@ -2616,11 +2534,6 @@
       if (sscInput) sscInput.value = '5.00';
       if (hscInput) hscInput.value = '5.00';
       if (timerInput) timerInput.value = 'false';
-      if (pinGroup) pinGroup.style.display = 'block';
-      if (pinInput) {
-        pinInput.required = true;
-        pinInput.value = '';
-      }
 
       updateLiveGpaPreview();
       openModal('modal-signup');
@@ -2642,49 +2555,29 @@
 
     async function handleCreateStudent(e) {
       e.preventDefault();
+      // Google-only: the modal is only opened by openSignUpModalForGoogle(),
+      // so the profile is always created at students/{authUid} with the
+      // authenticated Google email — exactly what creatingOwnProfile() in
+      // firestore.rules demands.
+      if (!pendingGoogleUser || !pendingGoogleUser.uid) {
+        showToast('প্রোফাইল তৈরি করতে Google দিয়ে সাইন-ইন করুন।', 4500, 'warn');
+        return;
+      }
       const name = document.getElementById('su-name').value.trim();
-      const email = document.getElementById('su-email').value.trim().toLowerCase();
+      const email = pendingGoogleUser.email || '';
       const ssc = parseFloat(document.getElementById('su-ssc').value) || 5.00;
       const hsc = parseFloat(document.getElementById('su-hsc').value) || 5.00;
       const isSecondTimer = document.getElementById('su-timer').value === 'true';
-      const rawPin = document.getElementById('su-pin').value.trim();
 
-      const isGoogleSignup = !!pendingGoogleUser;
-
-      if (!isGoogleSignup && !rawPin) {
-        alert('দয়া করে ৪-সংখ্যার PIN দিন!');
-        return;
-      }
-
-      // Check if email already registered via db_
-      const existing = await db_getStudentByEmail(email);
-      if (existing) {
-        if (isGoogleSignup) {
-          existing.authUid = pendingGoogleUser.uid;
-          existing.googleVerified = true;
-          await db_saveStudent(existing);
-          closeModal('modal-signup');
-          pendingGoogleUser = null;
-          await enterStudentApp(existing);
-          return;
-        } else {
-          alert('এই ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে! অনুগ্রহ করে লগইন করুন।');
-          return;
-        }
-      }
-
-      const studentId = isGoogleSignup ? pendingGoogleUser.uid : ('st-' + Date.now());
-      const authUid = isGoogleSignup ? pendingGoogleUser.uid : null;
+      const studentId = pendingGoogleUser.uid;
 
       const newStudent = {
         role: 'student',
         id: studentId,
-        authUid: authUid,
-        googleVerified: isGoogleSignup,
+        authUid: pendingGoogleUser.uid,
+        googleVerified: true,
         name: name || (pendingGoogleUser ? pendingGoogleUser.displayName : '') || 'শিক্ষার্থী',
         email: email,
-        pinHash: rawPin ? hashPin(rawPin) : '',
-        pin: rawPin ? hashPin(rawPin) : '',
         ssc: ssc.toFixed(2),
         hsc: hsc.toFixed(2),
         isSecondTimer,
@@ -3638,7 +3531,6 @@
       document.getElementById('set-ssc').value = student.ssc || '5.00';
       document.getElementById('set-hsc').value = student.hsc || '5.00';
       document.getElementById('set-timer').value = student.isSecondTimer ? 'true' : 'false';
-      document.getElementById('set-pin').value = '';
 
       const scaleToggle = document.getElementById('set-use-200-scale');
       if (scaleToggle) {
@@ -3687,12 +3579,6 @@
         student.use200Scale = scaleToggle.checked;
       }
       
-      const newPin = document.getElementById('set-pin').value.trim();
-      if (newPin) {
-        student.pinHash = hashPin(newPin);
-        student.pin = hashPin(newPin);
-      }
-
       await db_saveStudent(student);
       alert('প্রোফাইল তথ্য সফলভাবে আপডেট হয়েছে!');
       setupNavForUser('student', student);
@@ -4429,12 +4315,6 @@
       if (el) el.classList.remove('show');
     }
 
-    function openAdminLoginModal() {
-      document.getElementById('adm-login-email').value = 'rayanbinakter@gmail.com';
-      document.getElementById('adm-login-password').value = '';
-      openModal('modal-admin-login');
-    }
-
     function toggleDropdown() {
       const dd = document.getElementById('user-dropdown');
       if (dd) dd.classList.toggle('show');
@@ -4454,23 +4334,6 @@
     /* =========================================================================
        16. INITIALIZATION & EVENT WIRING
        ========================================================================= */
-    function wireLoginEvents() {
-      const _bl = document.getElementById('btnLogin');
-      if (_bl) {
-        // Remove any old listeners by cloning the node
-        const fresh = _bl.cloneNode(true);
-        _bl.parentNode.replaceChild(fresh, _bl);
-        document.getElementById('btnLogin').addEventListener('click', attemptLogin);
-      }
-
-      const _pin = document.getElementById('li-pin');
-      if (_pin) {
-        _pin.addEventListener('keydown', e => {
-          if (e.key === 'Enter') attemptLogin();
-        });
-      }
-    }
-
     let __appBooted = false;
     async function initApp() {
       if (__appBooted) return;
@@ -4509,7 +4372,6 @@
         showLogin();
       }
 
-      wireLoginEvents();
       updateSyncBadge();
     }
     if (document.readyState === 'loading') {
