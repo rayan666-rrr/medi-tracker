@@ -4464,6 +4464,13 @@
     let liveSubjectFilter = 'all';
     const LIVE_MA_WINDOW = 5;
     const LIVE_CHIP_NAMES = { all: 'সব', bio: 'বায়োলজি', chem: 'রসায়ন', phy: 'পদার্থবিজ্ঞান' };
+    
+    // Chapter name for tooltips: marks store the SYLLABUS row index.
+    let liveTrendMarks = [];
+    function liveChapterName(m) {
+      const chap = m && SYLLABUS[m.chapterId];
+      return chap ? chap[1] : '';
+    }
 
     function liveStudent() { return getCurrentStudent(); }
 
@@ -4628,6 +4635,7 @@
       const labels = marks.map((m, i) => m.date ? m.date.slice(5) : ('#' + (i + 1)));
       const values = marks.map(liveScore);
       const ma = movingAverage(values, LIVE_MA_WINDOW);
+            liveTrendMarks = marks;
 
       if (liveTrendChart) {
         liveTrendChart.data.labels = labels;
@@ -4674,7 +4682,17 @@
             tooltip: {
               backgroundColor: '#1e293b', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
               titleColor: '#e2e8f0', bodyColor: '#cbd5e1', padding: 10, displayColors: false,
-              callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + Math.round(c.parsed.y) + '/100' }
+                           callbacks: {
+                title: (items) => {
+                  const mk = liveTrendMarks[items[0] && items[0].dataIndex];
+                  return (mk && mk.date) ? mk.date : (items[0] ? items[0].label : '');
+                },
+                label: (c) => {
+                  const mk = liveTrendMarks[c.dataIndex];
+                  const nm = liveChapterName(mk);
+                  return ' ' + c.dataset.label + ': ' + Math.round(c.parsed.y) + '/100' + (nm ? ' • ' + nm : '');
+                }
+              }
             }
           },
           scales: {
