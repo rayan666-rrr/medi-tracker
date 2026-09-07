@@ -252,6 +252,41 @@
     .toast-info { border-color: var(--accent); }
     .toast-info .toast-icon { color: #818cf8; }
     .toast-message { word-break: break-word; }
+    
+    /* ── Live Progress (realtime graphs) ── */
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 700; padding: 4px 12px;
+      border-radius: 999px; border: 1px solid; white-space: nowrap;
+    }
+    .live-pill .live-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+    .live-pill.ok   { color: #34d399; border-color: rgba(52,211,153,.35);  background: rgba(52,211,153,.08); }
+    .live-pill.ok .live-dot { background: #34d399; animation: pulseDot 1.6s ease-in-out infinite; }
+    .live-pill.wait { color: #fbbf24; border-color: rgba(251,191,36,.35);  background: rgba(251,191,36,.08); }
+    .live-pill.wait .live-dot { background: #fbbf24; }
+    .live-pill.off  { color: #94a3b8; border-color: rgba(148,163,184,.3);  background: rgba(148,163,184,.08); }
+    .live-pill.off .live-dot { background: #94a3b8; }
+    @keyframes pulseDot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+    @media (prefers-reduced-motion: reduce) { .live-pill.ok .live-dot { animation: none; } }
+    .chip {
+      border: 1px solid var(--border); background: var(--card-elevated);
+      color: var(--text-muted); font-size: 12px; font-weight: 600;
+      padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: all .15s ease;
+    }
+    .chip:hover { color: var(--text); border-color: var(--accent-border); }
+    .chip.active { background: rgba(129,140,248,.15); border-color: var(--accent); color: #a5b4fc; }
+    .kpi-card {
+      background: var(--card-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+    }
+    .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.1; }
+    .kpi-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+    .kpi-sub { font-size: 11px; margin-top: 2px; font-weight: 600; color: var(--text-dim); }
+    @keyframes kpiFlash { 0% { text-shadow: 0 0 14px rgba(52,211,153,.65); } 100% { text-shadow: none; } }
+    .kpi-flash { animation: kpiFlash .8s ease-out; }
+    @media (prefers-reduced-motion: reduce) { .kpi-flash { animation: none; } }
+    .chart-box { position: relative; height: 280px; }
+    .chart-box-sm { position: relative; height: 240px; }
     @keyframes fadeInToast {
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -667,6 +702,7 @@
         <button class="nav-btn active" id="nav-home" onclick="navigate('home')">হোম</button>
         <button class="nav-btn" id="nav-subjects" onclick="navigate('subjects')">বিষয়সমূহ</button>
         <button class="nav-btn" id="nav-routine" onclick="navigate('routine')">রুটিন</button>
+                <button class="nav-btn" id="nav-live" onclick="navigate('live')">📈 লাইভ গ্রাফ</button>
       </div>
 
       <!-- Admin Navigation -->
@@ -873,9 +909,62 @@
       </div>
     </section>
 
-    <!-- =========================================================================
-         VIEW 2: SUBJECTS & PAPERS
-         ========================================================================= -->
+    <!-- Live Progress -->
+    <section id="view-live" class="hidden">
+      <div class="card" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="font-size: 18px; font-weight: 800;">📈 লাইভ প্রোগ্রেস</h2>
+          <p style="font-size: 12px; color: var(--text-muted);">যেকোনো ডিভাইস থেকে নম্বর সেভ করলেই গ্রাফ সাথে সাথে বদলাবে</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="live-updated" style="font-size: 11px; color: var(--text-dim);"></span>
+          <span id="live-pill" class="live-pill wait"><span class="live-dot"></span><span id="live-pill-text">সংযোগ হচ্ছে…</span></span>
+        </div>
+      </div>
+
+      <div id="live-empty" class="card hidden" style="text-align: center; padding: 40px 20px;">
+        <div style="font-size: 34px; margin-bottom: 8px;">📊</div>
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 6px;">এখনো কোনো নম্বর নেই</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">প্রথম অধ্যায়ে একটা পরীক্ষার নম্বর দাও — গ্রাফ তৈরি হয়ে যাবে।</p>
+        <button type="button" class="btn btn-primary" onclick="navigate('subjects')">অধ্যায় বেছে নাও</button>
+      </div>
+
+      <div id="live-content">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px;">
+          <div class="kpi-card"><div class="kpi-value" id="kpi-latest">—</div><div class="kpi-label">সর্বশেষ স্কোর</div><div class="kpi-sub" id="kpi-latest-sub"></div></div>
+          <div class="kpi-card"><div class="kpi-value" id="kpi-avg">—</div><div class="kpi-label">গড় (শেষ ১০টি)</div><div class="kpi-sub" id="kpi-avg-sub"></div></div>
+          <div class="kpi-card"><div class="kpi-value" id="kpi-best">—</div><div class="kpi-label">সর্বোচ্চ স্কোর</div><div class="kpi-sub" id="kpi-best-sub"></div></div>
+          <div class="kpi-card"><div class="kpi-value" id="kpi-count">—</div><div class="kpi-label">মোট পরীক্ষা</div><div class="kpi-sub" id="kpi-count-sub"></div></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <h3 style="font-size: 14px; font-weight: 700;">স্কোরের ধারা (০–১০০)</h3>
+            <div class="chip-row" id="live-chips">
+              <button type="button" class="chip active" data-subject="all" onclick="setLiveFilter('all')">সব</button>
+              <button type="button" class="chip" data-subject="bio" onclick="setLiveFilter('bio')">বায়োলজি</button>
+              <button type="button" class="chip" data-subject="chem" onclick="setLiveFilter('chem')">রসায়ন</button>
+              <button type="button" class="chip" data-subject="phy" onclick="setLiveFilter('phy')">পদার্থবিজ্ঞান</button>
+            </div>
+          </div>
+          <div class="chart-box"><canvas id="live-trend-chart"></canvas></div>
+          <p style="font-size: 11px; color: var(--text-dim); margin-top: 10px;">
+            <span style="color:#34d399;">▍ড্যাশ লাইন</span> = শেষ ৫টি পরীক্ষার চলমান গড় — তোমার আসল ধারা এটাই দেখায়।
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+          <div class="card">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">বিষয়ভিত্তিক গড়</h3>
+            <div class="chart-box-sm"><canvas id="live-subject-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">💡 বিশ্লেষণ</h3>
+            <div id="live-insights" style="font-size: 13px; line-height: 2; color: var(--text-muted);"></div>
+          </div>
+        </div>
+      </div>
+    </section>    <!-- VIEW 2: SUBJECTS & PAPERS -->
     <section id="view-subjects" class="hidden">
       <div class="card-title" style="margin-bottom: 16px;">
         <span style="font-size: 18px; font-weight: 700; color: var(--text);">বিষয়সমূহ নির্বাচন করুন</span>
@@ -1816,6 +1905,9 @@
           console.warn('Firestore write error in db_saveStudent:', err);
         }
       }
+
+      // Same-device saves must also move the live graphs (offline mode too).
+      if (typeof scheduleLiveRefresh === 'function') scheduleLiveRefresh();
     }
 
     async function db_listStudents() {
@@ -2233,7 +2325,7 @@
     const VIEWS = [
       'view-login', 'view-home', 'view-subjects', 'view-paper',
       'view-routine', 'view-settings', 'view-admin-home',
-      'view-student-analytics', 'view-admin-routine'
+      'view-student-analytics', 'view-admin-routine', 'view-live'
     ];
 
     function navigate(viewName) {
@@ -2252,17 +2344,21 @@
 
       closeDropdown();
 
+      // Leaving a view stops its realtime listeners (no-op when not active).
+      if (typeof stopLiveProgressWatch === 'function') stopLiveProgressWatch();
+
       // View-specific renderers
       if (viewName === 'login') renderLoginScreen();
       else if (viewName === 'home') renderStudentHome();
       else if (viewName === 'subjects') renderSubjectsGrid();
       else if (viewName === 'paper') renderPaperChapters(selectedPaperId);
       else if (viewName === 'routine') renderStudentRoutine();
+      else if (viewName === 'live') renderLiveProgress();
       else if (viewName === 'settings') renderSettings();
       else if (viewName === 'admin-home') renderAdminDashboard();
       else if (viewName === 'student-analytics') renderStudentAnalytics(drillStudentId);
       else if (viewName === 'admin-routine') renderAdminRoutineBuilder();
-
+      else if (viewName === 'live') renderLiveView();
       window.scrollTo(0, 0);
     }
 
@@ -4334,6 +4430,368 @@
       }
     });
 
+        /* =========================================================================
+       15.5 LIVE PROGRESS — REALTIME GRAPHS (Firestore onSnapshot + Chart.js)
+       ========================================================================= */
+    let liveTrendChart = null;
+    let liveSubjectChart = null;
+    let liveUnsub = null;
+    let liveRefreshTimer = null;
+    let liveSubjectFilter = 'all';
+    const LIVE_MA_WINDOW = 5;
+    const LIVE_CHIP_NAMES = { all: 'সব', bio: 'বায়োলজি', chem: 'রসায়ন', phy: 'পদার্থবিজ্ঞান' };
+
+    function liveStudent() { return getCurrentStudent(); }
+
+    function liveSubjectOfMark(m) {
+      const id = (typeof m.chapterId === 'string') ? m.chapterId : (SYLLABUS[m.chapterId] ? SYLLABUS[m.chapterId][0] : '');
+      if (String(id).startsWith('bio')) return 'bio';
+      if (String(id).startsWith('chem')) return 'chem';
+      if (String(id).startsWith('phy')) return 'phy';
+      return null;
+    }
+
+    function liveSortedMarks(student) {
+      return (student.marks || []).slice().sort((a, b) =>
+        String(a.savedAt || a.date || '').localeCompare(String(b.savedAt || b.date || '')));
+    }
+
+    function liveFilteredMarks(student) {
+      const all = liveSortedMarks(student);
+      if (liveSubjectFilter === 'all') return all;
+      return all.filter(m => liveSubjectOfMark(m) === liveSubjectFilter);
+    }
+
+    function liveScore(m) {
+      return (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m);
+    }
+
+    function movingAverage(values, w) {
+      return values.map((_, i) => {
+        const slice = values.slice(Math.max(0, i - w + 1), i + 1);
+        return slice.reduce((s, v) => s + v, 0) / slice.length;
+      });
+    }
+
+    // Shared dark-theme tokens for the live charts: low-opacity gridlines and
+    // muted ticks (high data-ink ratio), off-white text, reduced-motion aware.
+    function liveChartTheme() {
+      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      return { reduced, grid: 'rgba(255,255,255,0.07)', tick: '#94a3b8', font: { size: 11 } };
+    }
+
+    function setLivePill(kind, text) {
+      const pill = document.getElementById('live-pill');
+      if (!pill) return;
+      pill.className = 'live-pill ' + kind;
+      const t = document.getElementById('live-pill-text');
+      if (t) t.textContent = text;
+    }
+
+    function stampLiveUpdated() {
+      const el = document.getElementById('live-updated');
+      if (el) el.textContent = 'আপডেট: ' + new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // KPI cards: value + trend context (never color-only — always ▲/▼/+/-).
+    function renderLiveKpis(student) {
+      const marks = liveFilteredMarks(student);
+      const values = marks.map(liveScore);
+      const empty = values.length === 0;
+      document.getElementById('live-empty').classList.toggle('hidden', !empty);
+      document.getElementById('live-content').classList.toggle('hidden', empty);
+      if (empty) return false;
+
+      const set = (id, txt) => {
+        const el = document.getElementById(id);
+        if (el && el.textContent !== txt) {
+          el.textContent = txt;
+          el.classList.remove('kpi-flash'); void el.offsetWidth; el.classList.add('kpi-flash');
+        }
+      };
+
+      const latest = values[values.length - 1];
+      const prev = values.length > 1 ? values[values.length - 2] : null;
+      set('kpi-latest', String(Math.round(latest)));
+      const sub = document.getElementById('kpi-latest-sub');
+      if (prev === null) { sub.textContent = 'প্রথম পরীক্ষা'; sub.style.color = 'var(--text-dim)'; }
+      else {
+        const diff = Math.round(latest - prev);
+        if (diff > 0) { sub.textContent = '▲ +' + diff + ' আগের থেকে'; sub.style.color = '#34d399'; }
+        else if (diff < 0) { sub.textContent = '▼ ' + diff + ' আগের থেকে'; sub.style.color = '#f87171'; }
+        else { sub.textContent = '= আগের মতোই'; sub.style.color = 'var(--text-dim)'; }
+      }
+
+      const last10 = values.slice(-10);
+      set('kpi-avg', String(Math.round(last10.reduce((a, b) => a + b, 0) / last10.length)));
+      document.getElementById('kpi-avg-sub').textContent = last10.length + 'টি পরীক্ষা থেকে';
+
+      const best = Math.max(...values);
+      set('kpi-best', String(Math.round(best)));
+      const bestMark = marks[values.indexOf(best)];
+      document.getElementById('kpi-best-sub').textContent = bestMark && bestMark.date ? bestMark.date : '';
+
+      set('kpi-count', String(values.length));
+      document.getElementById('kpi-count-sub').textContent =
+        liveSubjectFilter === 'all' ? 'সব বিষয় মিলিয়ে' : LIVE_CHIP_NAMES[liveSubjectFilter] + ' ফিল্টারে';
+      return true;
+    }
+
+    function renderLiveInsights(student) {
+      const box = document.getElementById('live-insights');
+      if (!box) return;
+      const marks = liveFilteredMarks(student);
+      const values = marks.map(liveScore);
+      box.textContent = '';
+      if (values.length < 2) {
+        const p = document.createElement('div');
+        p.textContent = 'আরও কয়েকটি পরীক্ষা দিলে বিশ্লেষণ দেখাবে।';
+        box.appendChild(p);
+        return;
+      }
+
+      const items = [];
+
+      // Trend: last 3 average vs previous 3 (context, not just a color).
+      const recent = values.slice(-3);
+      const older = values.slice(-6, -3);
+      const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+      const olderAvg = older.length ? older.reduce((a, b) => a + b, 0) / older.length : recentAvg;
+      const trend = recentAvg - olderAvg;
+      if (trend > 2) items.push(['📈', 'শেষ কয়েকটি পরীক্ষায় ধারা উপরের দিকে (+' + Math.round(trend) + ') — এভাবেই চালিয়ে যাও!']);
+      else if (trend < -2) items.push(['📉', 'ধারা একটু নিচের দিকে (' + Math.round(trend) + ') — ঘুম আর রিভিশনে একটু জোর দাও।']);
+      else items.push(['➖', 'ধারা স্থিতিশীল — দুর্বল অধ্যায়ে সময় দিলে ভাঙা যাবে।']);
+
+      // Weakest / strongest subject (sorted, horizontal comparison in the chart).
+      const perSubject = ['bio', 'chem', 'phy'].map(id => {
+        const vals = liveSortedMarks(student).filter(m => liveSubjectOfMark(m) === id).map(liveScore);
+        return { id, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null, n: vals.length };
+      }).filter(s => s.avg !== null && s.n >= 2);
+      if (perSubject.length >= 2) {
+        const sorted = perSubject.slice().sort((a, b) => a.avg - b.avg);
+        const weak = sorted[0], strong = sorted[sorted.length - 1];
+        items.push(['🎯', 'সবচেয়ে দুর্বল বিষয়: ' + LIVE_CHIP_NAMES[weak.id] + ' (গড় ' + Math.round(weak.avg) + ') — সেখানে ফোকাস করো।']);
+        if (strong.id !== weak.id) items.push(['💪', 'সবচেয়ে শক্তিশালী: ' + LIVE_CHIP_NAMES[strong.id] + ' (গড় ' + Math.round(strong.avg) + ')।']);
+      }
+
+      // Most common mistake category (fixed vocabulary → safe as text).
+      const misCount = {};
+      marks.forEach(m => { if (m.mistakeCategory) misCount[m.mistakeCategory] = (misCount[m.mistakeCategory] || 0) + 1; });
+      const topMis = Object.entries(misCount).sort((a, b) => b[1] - a[1])[0];
+      if (topMis) items.push(['⚠️', 'সবচেয়ে বেশি ভুলের ধরন: ' + topMis[0] + ' (' + topMis[1] + ' বার) — এটার জন্য আলাদা খাতা রাখো।']);
+
+      items.forEach(([icon, text]) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.gap = '8px';
+        row.style.alignItems = 'flex-start';
+        const ic = document.createElement('span');
+        ic.textContent = icon;
+        const tx = document.createElement('span');
+        tx.textContent = text;
+        row.appendChild(ic); row.appendChild(tx);
+        box.appendChild(row);
+      });
+    }
+
+    // Trend chart: score line (gradient fill) + moving-average dash overlay.
+    // Updates the EXISTING chart instance via chart.update() — never recreates.
+    function renderLiveTrend(student) {
+      const cv = document.getElementById('live-trend-chart');
+      if (!cv || typeof Chart === 'undefined') return;
+      const th = liveChartTheme();
+      const marks = liveFilteredMarks(student);
+      const labels = marks.map((m, i) => m.date ? m.date.slice(5) : ('#' + (i + 1)));
+      const values = marks.map(liveScore);
+      const ma = movingAverage(values, LIVE_MA_WINDOW);
+
+      if (liveTrendChart) {
+        liveTrendChart.data.labels = labels;
+        liveTrendChart.data.datasets[0].data = values;
+        liveTrendChart.data.datasets[1].data = ma;
+        liveTrendChart.update(th.reduced ? 'none' : undefined);
+        return;
+      }
+
+      const gradient = (ctx) => {
+        const area = ctx.chart.chartArea;
+        if (!area) return 'rgba(129,140,248,0.12)';
+        const g = ctx.chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+        g.addColorStop(0, 'rgba(129,140,248,0.22)');
+        g.addColorStop(1, 'rgba(129,140,248,0)');
+        return g;
+      };
+
+      liveTrendChart = new Chart(cv, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'স্কোর', data: values,
+              borderColor: '#818cf8', borderWidth: 2.5, tension: 0.35,
+              pointRadius: values.length > 40 ? 0 : 2.5, pointHoverRadius: 5,
+              pointBackgroundColor: '#818cf8', fill: true, backgroundColor: gradient
+            },
+            {
+              label: 'চলমান গড় (' + LIVE_MA_WINDOW + ')', data: ma,
+              borderColor: '#34d399', borderWidth: 1.5, borderDash: [6, 5],
+              tension: 0.35, pointRadius: 0, fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          animation: th.reduced ? false : { duration: 350 },
+          plugins: {
+            legend: { display: true, position: 'top', align: 'end', labels: { color: th.tick, boxWidth: 18, boxHeight: 2, font: th.font } },
+            tooltip: {
+              backgroundColor: '#1e293b', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+              titleColor: '#e2e8f0', bodyColor: '#cbd5e1', padding: 10, displayColors: false,
+              callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + Math.round(c.parsed.y) + '/100' }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: th.tick, font: th.font, maxTicksLimit: 10, maxRotation: 0, autoSkip: true } },
+            y: { min: 0, max: 100, grid: { color: th.grid }, ticks: { color: th.tick, font: th.font, stepSize: 25 } }
+          }
+        }
+      });
+    }
+
+    // Subject comparison: HORIZONTAL bars (angle-comparison pies avoided on
+    // purpose), sorted by average, count shown in the tooltip.
+    function renderLiveSubjects(student) {
+      const cv = document.getElementById('live-subject-chart');
+      if (!cv || typeof Chart === 'undefined') return;
+      const th = liveChartTheme();
+      const palette = { bio: '#34d399', chem: '#fbbf24', phy: '#818cf8' };
+      const subjects = ['bio', 'chem', 'phy'].map(id => {
+        const vals = liveSortedMarks(student).filter(m => liveSubjectOfMark(m) === id).map(liveScore);
+        return {
+          id, name: LIVE_CHIP_NAMES[id],
+          avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0,
+          count: vals.length
+        };
+      }).sort((a, b) => b.avg - a.avg);
+
+      if (liveSubjectChart) {
+        liveSubjectChart.data.labels = subjects.map(s => s.name);
+        liveSubjectChart.data.datasets[0].data = subjects.map(s => Math.round(s.avg));
+        liveSubjectChart.update(th.reduced ? 'none' : undefined);
+        return;
+      }
+
+      liveSubjectChart = new Chart(cv, {
+        type: 'bar',
+        data: {
+          labels: subjects.map(s => s.name),
+          datasets: [{
+            data: subjects.map(s => Math.round(s.avg)),
+            backgroundColor: subjects.map(s => palette[s.id] + 'B3'),
+            borderColor: subjects.map(s => palette[s.id]),
+            borderWidth: 1, borderRadius: 6, barThickness: 22
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: th.reduced ? false : { duration: 350 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1e293b', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+              titleColor: '#e2e8f0', bodyColor: '#cbd5e1', padding: 10, displayColors: false,
+              callbacks: {
+                label: (c) => {
+                  const s = subjects[c.dataIndex];
+                  return ' গড় ' + c.parsed.x + '/100 • ' + s.count + 'টি পরীক্ষা';
+                }
+              }
+            }
+          },
+          scales: {
+            x: { min: 0, max: 100, grid: { color: th.grid }, ticks: { color: th.tick, font: th.font, stepSize: 25 } },
+            y: { grid: { display: false }, ticks: { color: th.tick, font: { size: 12 } } }
+          }
+        }
+      });
+    }
+
+    // ── Realtime lifecycle ───────────────────────────────────────────────────
+    function renderLiveProgress() {
+      const student = liveStudent();
+      if (!student) return;
+      const hasData = renderLiveKpis(student);
+      if (hasData) {
+        renderLiveTrend(student);
+        renderLiveSubjects(student);
+        renderLiveInsights(student);
+      }
+      stampLiveUpdated();
+      startLiveProgressWatch();
+    }
+
+    function startLiveProgressWatch() {
+      if (liveUnsub) return; // already watching
+      if (!window.MTDB || typeof window.MTDBWatchOwnDoc !== 'function') {
+        setLivePill('off', 'অফলাইন — লোকাল ডেটা');
+        return;
+      }
+      const unsub = window.MTDBWatchOwnDoc(
+        (fresh) => {
+          setLivePill('ok', 'লাইভ — রিয়েল-টাইম সিঙ্ক চালু');
+          const cur = liveStudent();
+          if (!cur || !fresh || fresh.id !== cur.id) return;
+          // Merge the fresh cloud doc so every other view sees the same data.
+          const idx = state.profiles.findIndex(p => p.id === cur.id);
+          if (idx >= 0) state.profiles[idx] = fresh; else state.profiles.push(fresh);
+          saveState();
+          scheduleLiveRefresh();
+        },
+        () => setLivePill('off', 'সিঙ্ক বন্ধ — লোকাল ডেটা')
+      );
+      if (unsub) { liveUnsub = unsub; setLivePill('wait', 'সংযোগ হচ্ছে…'); }
+      else setLivePill('off', 'অফলাইন — লোকাল ডেটা');
+    }
+
+    function stopLiveProgressWatch() {
+      if (liveUnsub) { try { liveUnsub(); } catch (e) {} liveUnsub = null; }
+      if (liveRefreshTimer) { clearTimeout(liveRefreshTimer); liveRefreshTimer = null; }
+    }
+
+    // Debounced refresh (200 ms) so bursts of snapshots never jitter the charts.
+    function scheduleLiveRefresh() {
+      const view = document.getElementById('view-live');
+      if (!view || view.classList.contains('hidden')) return;
+      if (liveRefreshTimer) clearTimeout(liveRefreshTimer);
+      liveRefreshTimer = setTimeout(() => {
+        liveRefreshTimer = null;
+        const student = liveStudent();
+        if (!student) return;
+        if (renderLiveKpis(student)) {
+          renderLiveTrend(student);
+          renderLiveSubjects(student);
+          renderLiveInsights(student);
+        }
+        stampLiveUpdated();
+      }, 200);
+    }
+
+    function setLiveFilter(sub) {
+      liveSubjectFilter = sub;
+      document.querySelectorAll('#live-chips .chip').forEach(c =>
+        c.classList.toggle('active', c.dataset.subject === sub));
+      const student = liveStudent();
+      if (!student) return;
+      if (renderLiveKpis(student)) {
+        renderLiveTrend(student);
+        renderLiveInsights(student);
+      }
+    }
     /* =========================================================================
        16. INITIALIZATION & EVENT WIRING
        ========================================================================= */
