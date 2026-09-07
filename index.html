@@ -1651,6 +1651,30 @@
       return true;
     };
 
+        // ── Realtime: watch my own student doc (powers the live graphs) ──
+    window.MTDBWatchOwnDoc = function(onData, onError) {
+      const u = auth.currentUser;
+      if (!u) return null;
+      let unsub = null;
+      let cancelled = false;
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+        .then((fs) => {
+          if (cancelled) return;
+          unsub = fs.onSnapshot(
+            fs.doc(db, 'students', u.uid),
+            (snap) => { if (snap.exists() && typeof onData === 'function') onData(snap.data()); },
+            (err) => {
+              console.warn('[MTDB] own-doc watch error:', err.code || err.message);
+              if (typeof onError === 'function') onError(err);
+            }
+          );
+        })
+        .catch((err) => {
+          console.warn('[MTDB] watch setup failed:', err);
+          if (typeof onError === 'function') onError(err);
+        });
+      return function() { cancelled = true; if (unsub) { try { unsub(); } catch (e) {} unsub = null; } };
+    };
     window.initMTDB = async () => {
       try {
                 await probeOwnDoc();
