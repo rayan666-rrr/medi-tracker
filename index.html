@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8" />
@@ -714,7 +714,7 @@
       <div class="nav-right">
         <!-- Student Stats Pill -->
         <div class="stat-pill" id="student-stat-pill">
-          <span>🔥 <strong id="nav-streak">০ দিন</strong></span>
+          <span>🔥 <strong id="nav-streak">0 দিন</strong></span>
           <span style="opacity: 0.3;">|</span>
           <span>র‍্যাঙ্ক: <strong id="nav-rank">#—</strong></span>
         </div>
@@ -776,14 +776,14 @@
       <div class="card" id="home-category-card" style="margin-bottom: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
-            <div id="home-score-header" style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px;">তোমার গড়: — / ১০০</div>
+            <div id="home-score-header" style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px;">তোমার গড়: — / 100</div>
             <div id="home-category-badge" style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; padding: 6px 14px; border-radius: 8px; background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3);">
               ক্যাটাগরি: ⚠️ Red Zone (রেড জোন)
             </div>
           </div>
           <div style="text-align: right;">
             <div id="home-cat-rank-pill" style="font-size: 13px; color: var(--accent); font-weight: 600;">
-              📍 #— / ১০০
+              📍 #— / 100
             </div>
           </div>
         </div>
@@ -796,34 +796,34 @@
             <div class="rank-orb-inner">
               <span class="rank-orb-label">সম্ভাব্য র‍্যাঙ্ক</span>
               <span class="rank-orb-num" id="home-rank-num">#—</span>
-              <span class="rank-orb-label">/১০০ জনের মধ্যে</span>
+              <span class="rank-orb-label">/100 জনের মধ্যে</span>
             </div>
           </div>
 
           <div>
             <table class="breakdown-table">
               <tr>
-                <td>SSC GPA (× ৮)</td>
+                <td>SSC GPA (× 8)</td>
                 <td id="row-ssc">—</td>
               </tr>
               <tr>
-                <td>HSC GPA (× ১২)</td>
+                <td>HSC GPA (× 12)</td>
                 <td id="row-hsc">—</td>
               </tr>
               <tr>
-                <td>বেস GPA স্কোর (১০০)</td>
+                <td>বেস GPA স্কোর (100)</td>
                 <td id="row-base-gpa">—</td>
               </tr>
               <tr id="row-penalty-tr" class="hidden">
-                <td class="text-rose">২য় বার পরীক্ষার্থী পেনাল্টি</td>
-                <td class="text-rose" id="row-penalty">-৩.০০</td>
+                <td class="text-rose">2য় বার পরীক্ষার্থী পেনাল্টি</td>
+                <td class="text-rose" id="row-penalty">-3.00</td>
               </tr>
               <tr>
-                <td>লিখিত পরীক্ষা গড় (১০০)</td>
+                <td>লিখিত পরীক্ষা গড় (100)</td>
                 <td id="row-written">—</td>
               </tr>
               <tr style="border-bottom: none;">
-                <td class="breakdown-total">সর্বমোট স্কোর (২০০)</td>
+                <td class="breakdown-total">সর্বমোট স্কোর (200)</td>
                 <td class="breakdown-total" id="row-total">—</td>
               </tr>
             </table>
@@ -869,8 +869,41 @@
         </div>
       </div>
 
+            <div class="card" id="exam-coach-card">
+        <div class="card-title" style="margin-bottom: 16px;">
+          <span>🧪 পরীক্ষা বিশ্লেষণ — কোথায় হারছো, কীভাবে জাবো</span>
+        </div>
+
+        <div id="coach-empty" class="empty-state hidden" style="padding: 30px 0;">
+          একটা পরীক্ষার নম্বর দিলেই এখানে তোমার উত্তরপত্রের এক্স-রে বসবে।
+        </div>
+
+        <div id="coach-content">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="background: var(--card-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px;">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">উত্তরপত্রের ভাগ (সব পরীক্ষা মিলিয়ে)</div>
+              <div style="height: 200px; position: relative;">
+                <canvas id="coach-donut"></canvas>
+              </div>
+              <div style="display: flex; justify-content: space-around; margin-top: 10px; font-size: 12px; font-weight: 700;">
+                <span style="color:#34d399;">সঠিক <span id="coach-kpi-correct">—</span></span>
+                <span style="color:#f87171;">ভুল <span id="coach-kpi-wrong">—</span></span>
+                <span style="color:#94a3b8;">স্কিপ <span id="coach-kpi-skip">—</span></span>
+              </div>
+              <div style="text-align:center; margin-top: 8px; font-size: 12px; color:#fbbf24;">
+                নেগেটিভ ক্ষতি (মোট): <b id="coach-neg">—</b> মার্ক
+              </div>
+            </div>
+
+            <div style="background: var(--card-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px;">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">🧠 কোচের পরামর্শ</div>
+              <div id="coach-insights" style="font-size: 12.5px; line-height: 1.9; color: var(--text-muted); display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- Study Thinking Stats Section -->
-      <div class="card" id="home-thinking-card">
+            <div class="card" id="home-thinking-card" style="display:none">
         <div class="card-title" style="margin-bottom: 16px;">
           <span>📊 তোমার অধ্যয়নের ধরন</span>
         </div>
@@ -932,14 +965,14 @@
       <div id="live-content">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px;">
           <div class="kpi-card"><div class="kpi-value" id="kpi-latest">—</div><div class="kpi-label">সর্বশেষ স্কোর</div><div class="kpi-sub" id="kpi-latest-sub"></div></div>
-          <div class="kpi-card"><div class="kpi-value" id="kpi-avg">—</div><div class="kpi-label">গড় (শেষ ১০টি)</div><div class="kpi-sub" id="kpi-avg-sub"></div></div>
+          <div class="kpi-card"><div class="kpi-value" id="kpi-avg">—</div><div class="kpi-label">গড় (শেষ 10টি)</div><div class="kpi-sub" id="kpi-avg-sub"></div></div>
           <div class="kpi-card"><div class="kpi-value" id="kpi-best">—</div><div class="kpi-label">সর্বোচ্চ স্কোর</div><div class="kpi-sub" id="kpi-best-sub"></div></div>
           <div class="kpi-card"><div class="kpi-value" id="kpi-count">—</div><div class="kpi-label">মোট পরীক্ষা</div><div class="kpi-sub" id="kpi-count-sub"></div></div>
         </div>
 
         <div class="card" style="margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-            <h3 style="font-size: 14px; font-weight: 700;">স্কোরের ধারা (০–১০০)</h3>
+            <h3 style="font-size: 14px; font-weight: 700;">স্কোরের ধারা (0–100)</h3>
             <div class="chip-row" id="live-chips">
               <button type="button" class="chip active" data-subject="all" onclick="setLiveFilter('all')">সব</button>
               <button type="button" class="chip" data-subject="bio" onclick="setLiveFilter('bio')">বায়োলজি</button>
@@ -949,7 +982,7 @@
           </div>
           <div class="chart-box"><canvas id="live-trend-chart"></canvas></div>
           <p style="font-size: 11px; color: var(--text-dim); margin-top: 10px;">
-            <span style="color:#34d399;">▍ড্যাশ লাইন</span> = শেষ ৫টি পরীক্ষার চলমান গড় — তোমার আসল ধারা এটাই দেখায়।
+            <span style="color:#34d399;">▍ড্যাশ লাইন</span> = শেষ 5টি পরীক্ষার চলমান গড় — তোমার আসল ধারা এটাই দেখায়।
           </p>
         </div>
 
@@ -981,7 +1014,7 @@
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div>
           <button class="btn btn-secondary btn-sm" onclick="navigate('subjects')">← বিষয় তালিকায় ফিরুন</button>
-          <h2 style="font-size: 20px; font-weight: 700; margin-top: 8px;" id="paper-view-title">পদার্থবিজ্ঞান ১ম পত্র</h2>
+          <h2 style="font-size: 20px; font-weight: 700; margin-top: 8px;" id="paper-view-title">পদার্থবিজ্ঞান 1ম পত্র</h2>
         </div>
       </div>
       <div class="card">
@@ -1031,18 +1064,18 @@
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="font-size: 12px;">Correct:</label>
-              <input type="number" id="entry-correct" class="form-input" min="0" placeholder="০" oninput="updateChapterLivePreview()" required />
+              <input type="number" id="entry-correct" class="form-input" min="0" placeholder="0" oninput="updateChapterLivePreview()" required />
             </div>
           </div>
 
           <div class="form-row" style="margin-bottom: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="font-size: 12px;">Wrong:</label>
-              <input type="number" id="entry-wrong" class="form-input" min="0" placeholder="০" oninput="updateChapterLivePreview()" required />
+              <input type="number" id="entry-wrong" class="form-input" min="0" placeholder="0" oninput="updateChapterLivePreview()" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="font-size: 12px;">Skipped:</label>
-              <input type="number" id="entry-skipped" class="form-input" min="0" placeholder="০" readonly style="background: var(--bg); opacity: 0.85;" />
+              <input type="number" id="entry-skipped" class="form-input" min="0" placeholder="0" readonly style="background: var(--bg); opacity: 0.85;" />
             </div>
           </div>
 
@@ -1085,7 +1118,7 @@
       <div class="card">
         <div class="card-title">
           <span>আজকের স্টাডি রুটিন</span>
-          <span id="routine-progress-text" style="font-size: 13px; color: var(--accent);">০ / ০ সম্পন্ন</span>
+          <span id="routine-progress-text" style="font-size: 13px; color: var(--accent);">0 / 0 সম্পন্ন</span>
         </div>
         <div id="student-routine-list">
           <!-- Rendered via JS -->
@@ -1117,15 +1150,15 @@
           <div class="form-group">
             <label class="form-label">পরীক্ষার্থী ধরন</label>
             <select id="set-timer" class="form-select">
-              <option value="false">১ম বার পরীক্ষার্থী (কোনো পেনাল্টি নেই)</option>
-              <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
+              <option value="false">1ম বার পরীক্ষার্থী (কোনো পেনাল্টি নেই)</option>
+              <option value="true">2য় বার পরীক্ষার্থী (-3 নম্বর পেনাল্টি)</option>
             </select>
           </div>
           <!-- 200 Scale Toggle Row -->
           <div class="form-group" style="background: var(--card-elevated); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
             <div>
-              <label for="set-use-200-scale" style="font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; display: block; margin-bottom: 2px;">২০০ নম্বর স্কেল দেখাও</label>
-              <div style="font-size: 12px; color: var(--text-muted);">SSC/HSC GPA সহ ২০০ নম্বরের ভিত্তিতে মূল্যায়ন ও ক্যাটাগরি</div>
+              <label for="set-use-200-scale" style="font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; display: block; margin-bottom: 2px;">200 নম্বর স্কেল দেখাও</label>
+              <div style="font-size: 12px; color: var(--text-muted);">SSC/HSC GPA সহ 200 নম্বরের ভিত্তিতে মূল্যায়ন ও ক্যাটাগরি</div>
             </div>
             <label class="switch">
               <input type="checkbox" id="set-use-200-scale" />
@@ -1161,11 +1194,11 @@
       <div class="admin-stats-grid">
         <div class="stat-box">
           <div class="stat-box-title">মোট শিক্ষার্থী</div>
-          <div class="stat-box-value" id="adm-total-students">০</div>
+          <div class="stat-box-value" id="adm-total-students">0</div>
         </div>
         <div class="stat-box">
           <div class="stat-box-title">এই সপ্তাহে সক্রিয়</div>
-          <div class="stat-box-value" id="adm-active-week">০</div>
+          <div class="stat-box-value" id="adm-active-week">0</div>
         </div>
         <div class="stat-box">
           <div class="stat-box-title">ক্লাস গড় র‍্যাঙ্ক</div>
@@ -1173,7 +1206,7 @@
         </div>
         <div class="stat-box">
           <div class="stat-box-title">আজকের মোট ব্লক</div>
-          <div class="stat-box-value" id="adm-today-blocks">০</div>
+          <div class="stat-box-value" id="adm-today-blocks">0</div>
         </div>
         <div class="stat-box">
           <div class="stat-box-title">গড় সম্পন্ন হার</div>
@@ -1181,13 +1214,13 @@
         </div>
         <div class="stat-box">
           <div class="stat-box-title">আজকের সম্পন্ন ব্লক</div>
-          <div class="stat-box-value" id="adm-today-completed">০</div>
+          <div class="stat-box-value" id="adm-today-completed">0</div>
         </div>
       </div>
 
       <!-- Class Chart Card -->
       <div class="card">
-        <div class="card-title">📊 বিষয়ভিত্তিক ক্লাস গড় স্কোর (১০০ এর স্কেলে)</div>
+        <div class="card-title">📊 বিষয়ভিত্তিক ক্লাস গড় স্কোর (100 এর স্কেলে)</div>
         <div style="height: 260px; position: relative;" id="admin-chart-container">
           <canvas id="classAvgChart"></canvas>
           <div id="admin-chart-empty" class="empty-state hidden">কোনো শিক্ষার্থীর পরীক্ষার ডেটা পাওয়া যায়নি</div>
@@ -1204,7 +1237,7 @@
 
       <!-- Activity Heatmap (Last 15 Days) -->
       <div class="card">
-        <div class="card-title">📅 গত ১৫ দিনের ক্লাস অ্যাক্টিভিটি হিটম্যাপ</div>
+        <div class="card-title">📅 গত 15 দিনের ক্লাস অ্যাক্টিভিটি হিটম্যাপ</div>
         <div class="heatmap-row" id="admin-heatmap-row">
           <!-- 15 cells rendered via JS -->
         </div>
@@ -1231,7 +1264,7 @@
           <div>
             <h2 style="font-size: 18px; font-weight: 700;" id="drill-name">রায়ান বিন আখতার</h2>
             <p style="font-size: 13px; color: var(--text-muted);" id="drill-email">student@tracker.app</p>
-            <p style="font-size: 12px; color: var(--text-dim); margin-top: 4px;" id="drill-meta">SSC: ৫.০০ | HSC: ৫.০০ | ১ম বার | স্ট্রিক: ০ দিন</p>
+            <p style="font-size: 12px; color: var(--text-dim); margin-top: 4px;" id="drill-meta">SSC: 5.00 | HSC: 5.00 | 1ম বার | স্ট্রিক: 0 দিন</p>
           </div>
         </div>
         <div style="text-align: right;">
@@ -1243,7 +1276,7 @@
       <!-- 4 Drill-down Charts Grid -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
         <div class="card">
-          <div class="card-title">📈 র‍্যাঙ্ক প্রবণতা (১ নম্বর শীর্ষে)</div>
+          <div class="card-title">📈 র‍্যাঙ্ক প্রবণতা (1 নম্বর শীর্ষে)</div>
           <div style="height: 220px; position: relative;">
             <canvas id="drillRankChart"></canvas>
             <div id="drill-rank-empty" class="empty-state hidden">ডেটা নেই</div>
@@ -1251,7 +1284,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title">📊 বিষয়ভিত্তিক গড় স্কোর (/১০০)</div>
+          <div class="card-title">📊 বিষয়ভিত্তিক গড় স্কোর (/100)</div>
           <div style="height: 220px; position: relative;">
             <canvas id="drillPaperChart"></canvas>
             <div id="drill-paper-empty" class="empty-state hidden">ডেটা নেই</div>
@@ -1259,7 +1292,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title">🎯 চ্যাপ্টার মাস্টারি (টপ ৮)</div>
+          <div class="card-title">🎯 চ্যাপ্টার মাস্টারি (টপ 8)</div>
           <div style="height: 220px; position: relative;">
             <canvas id="drillMasteryChart"></canvas>
             <div id="drill-mastery-empty" class="empty-state hidden">ডেটা নেই</div>
@@ -1267,7 +1300,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title">📅 রুটিন সম্পন্ন হার (গত ৭ দিন)</div>
+          <div class="card-title">📅 রুটিন সম্পন্ন হার (গত 7 দিন)</div>
           <div style="height: 220px; position: relative;">
             <canvas id="drillRoutineChart"></canvas>
             <div id="drill-routine-empty" class="empty-state hidden">ডেটা নেই</div>
@@ -1319,12 +1352,12 @@
         <div class="form-group">
           <label class="form-label">বিষয়</label>
           <select id="rb-subject-select" class="form-select" onchange="renderRoutineChapterChecklist()">
-            <option value="bio1">বায়োলজি ১ম পত্র (উদ্ভিদবিজ্ঞান)</option>
-            <option value="bio2">বায়োলজি ২য় পত্র (প্রাণিবিজ্ঞান)</option>
-            <option value="chem1">রসায়ন ১ম পত্র</option>
-            <option value="chem2">রসায়ন ২য় পত্র</option>
-            <option value="phy1">পদার্থবিজ্ঞান ১ম পত্র</option>
-            <option value="phy2">পদার্থবিজ্ঞান ২য় পত্র</option>
+            <option value="bio1">বায়োলজি 1ম পত্র (উদ্ভিদবিজ্ঞান)</option>
+            <option value="bio2">বায়োলজি 2য় পত্র (প্রাণিবিজ্ঞান)</option>
+            <option value="chem1">রসায়ন 1ম পত্র</option>
+            <option value="chem2">রসায়ন 2য় পত্র</option>
+            <option value="phy1">পদার্থবিজ্ঞান 1ম পত্র</option>
+            <option value="phy2">পদার্থবিজ্ঞান 2য় পত্র</option>
           </select>
         </div>
 
@@ -1343,7 +1376,7 @@
 
         <div class="form-group">
           <label class="form-label">নোট (ঐচ্ছিক)</label>
-          <input type="text" id="rb-note" class="form-input" placeholder="যেমন: বিগত ৫ বছরের মেডিকেল প্রশ্ন সলভ করতে হবে" />
+          <input type="text" id="rb-note" class="form-input" placeholder="যেমন: বিগত 5 বছরের মেডিকেল প্রশ্ন সলভ করতে হবে" />
         </div>
 
         <button type="button" class="btn btn-secondary btn-block" onclick="addPendingBlock()">+ ব্লক যোগ করো</button>
@@ -1396,14 +1429,14 @@
         <div class="form-group">
           <label class="form-label">পরীক্ষার্থী ধরন</label>
           <select id="su-timer" class="form-select" onchange="updateLiveGpaPreview()">
-            <option value="false">১ম বার পরীক্ষার্থী (কোনো পেনাল্টি নেই)</option>
-            <option value="true">২য় বার পরীক্ষার্থী (-৩ নম্বর পেনাল্টি)</option>
+            <option value="false">1ম বার পরীক্ষার্থী (কোনো পেনাল্টি নেই)</option>
+            <option value="true">2য় বার পরীক্ষার্থী (-3 নম্বর পেনাল্টি)</option>
           </select>
         </div>
         <!-- Live GPA Preview -->
         <div style="background: var(--card-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--accent-border); margin-bottom: 20px; font-size: 13px;">
-          <div style="color: var(--text-muted); margin-bottom: 4px;">লাইভ GPA স্কোর হিসাব (১০০ তে):</div>
-          <div id="su-gpa-formula" style="font-weight: 600; color: var(--accent);">৫.০০ × ৮ + ৫.০০ × ১২ = ১০০.০০ / ১০০</div>
+          <div style="color: var(--text-muted); margin-bottom: 4px;">লাইভ GPA স্কোর হিসাব (100 তে):</div>
+          <div id="su-gpa-formula" style="font-weight: 600; color: var(--accent);">5.00 × 8 + 5.00 × 12 = 100.00 / 100</div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">শুরু করো</button>
@@ -1760,7 +1793,7 @@
       ['phy1','নিউটোনীয় বলবিদ্যা'],['phy1','কাজ, শক্তি ও ক্ষমতা'],
       ['phy1','মহাকর্ষ ও অভিকর্ষ'],['phy1','পদার্থের গাঠনিক ধর্ম'],
       ['phy1','পর্যাবৃত্তিক গতি'],['phy1','তরঙ্গ'],
-      ['phy1','আদর্শ গ্যাস ৪ গ্যাসের গতিতত্ত্ব'],
+      ['phy1','আদর্শ গ্যাস 4 গ্যাসের গতিতত্ত্ব'],
       ['phy2','তাপগতিবিদ্যা'],['phy2','স্থির তড়িৎ'],['phy2','চল তড়িৎ'],
       ['phy2','তড়িৎ প্রবাহের চৌম্বক ক্রিয়া ও চুম্বকত্ব'],
       ['phy2','তাড়িতচৌম্বকীয় আবেশ ও পরিবর্তী প্রবাহ'],
@@ -1776,28 +1809,28 @@
       ['chem2','অর্থনৈতিক রসায়ন'],
       ['bio1','কোষ ও এর গঠন'],['bio1','কোষ বিভাজন'],
       ['bio1','কোষ রসায়ন'],['bio1','অণুজীব'],
-      ['bio1','শৈবাল ও ছত্রাক'],['bio1','ব্রায়োফাইটা ৪ টেরিডোফাইটা'],
-      ['bio1','নগ্নবীজী ৪ আবৃতবীজী উদ্ভিদ'],['bio1','টিস্যু ৪ টিস্যুতন্ত্র'],
+      ['bio1','শৈবাল ও ছত্রাক'],['bio1','ব্রায়োফাইটা 4 টেরিডোফাইটা'],
+      ['bio1','নগ্নবীজী 4 আবৃতবীজী উদ্ভিদ'],['bio1','টিস্যু 4 টিস্যুতন্ত্র'],
       ['bio1','উদ্ভিদ শারীরতত্ত্ব'],['bio1','উদ্ভিদ প্রজনন'],
-      ['bio1','জীবপ্রযুক্তি'],['bio1','জীবের পরিবেশ, বিস্তার ৪ সংরক্ষণ'],
-      ['bio2','প্রাণীর বিভিন্নতা ৪ শ্রেণিবিন্যাস'],['bio2','প্রাণীর পরিচিতি'],
-      ['bio2','মানব শারীরতত্ত্ব: পরিপাক ৪ শোষণ'],
-      ['bio2','মানব শারীরতত্ত্ব: রক্ত ৪ সংবহন'],
-      ['bio2','মানব শারীরতত্ত্ব: শ্বসন ৪ শ্বাসক্রিয়া'],
-      ['bio2','মানব শারীরতত্ত্ব: বর্জ্য ৪ নিষ্কাশন'],
-      ['bio2','মানব শারীরতত্ত্ব: চলন ৪ অঙ্গচালনা'],
-      ['bio2','মানব শারীরতত্ত্ব: সমন্বয় ৪ নিয়ন্ত্রণ'],
+      ['bio1','জীবপ্রযুক্তি'],['bio1','জীবের পরিবেশ, বিস্তার 4 সংরক্ষণ'],
+      ['bio2','প্রাণীর বিভিন্নতা 4 শ্রেণিবিন্যাস'],['bio2','প্রাণীর পরিচিতি'],
+      ['bio2','মানব শারীরতত্ত্ব: পরিপাক 4 শোষণ'],
+      ['bio2','মানব শারীরতত্ত্ব: রক্ত 4 সংবহন'],
+      ['bio2','মানব শারীরতত্ত্ব: শ্বসন 4 শ্বাসক্রিয়া'],
+      ['bio2','মানব শারীরতত্ত্ব: বর্জ্য 4 নিষ্কাশন'],
+      ['bio2','মানব শারীরতত্ত্ব: চলন 4 অঙ্গচালনা'],
+      ['bio2','মানব শারীরতত্ত্ব: সমন্বয় 4 নিয়ন্ত্রণ'],
       ['bio2','মানব জীবনের ধারাবাহিকতা'],['bio2','মানবদেহের প্রতিরক্ষা'],
-      ['bio2','জিনতত্ত্ব ৪ বিবর্তন'],['bio2','প্রাণীর আচরণ']
+      ['bio2','জিনতত্ত্ব 4 বিবর্তন'],['bio2','প্রাণীর আচরণ']
     ];
 
     const PAPERS = {
-      phy1: { name: 'পদার্থবিজ্ঞান ১ম পত্র', subject: 'phy' },
-      phy2: { name: 'পদার্থবিজ্ঞান ২য় পত্র', subject: 'phy' },
-      chem1: { name: 'রসায়ন ১ম পত্র', subject: 'chem' },
-      chem2: { name: 'রসায়ন ২য় পত্র', subject: 'chem' },
-      bio1: { name: 'বায়োলজি ১ম পত্র', subject: 'bio' },
-      bio2: { name: 'বায়োলজি ২য় পত্র', subject: 'bio' }
+      phy1: { name: 'পদার্থবিজ্ঞান 1ম পত্র', subject: 'phy' },
+      phy2: { name: 'পদার্থবিজ্ঞান 2য় পত্র', subject: 'phy' },
+      chem1: { name: 'রসায়ন 1ম পত্র', subject: 'chem' },
+      chem2: { name: 'রসায়ন 2য় পত্র', subject: 'chem' },
+      bio1: { name: 'বায়োলজি 1ম পত্র', subject: 'bio' },
+      bio2: { name: 'বায়োলজি 2য় পত্র', subject: 'bio' }
     };
 
     // Deterministic 100-student normal distribution N(110, 25) clamped [0, 200]
@@ -2613,7 +2646,7 @@
 
         const metrics = calculateStudentMetrics(user);
         document.getElementById('nav-streak').textContent = `${user.streak || 0} দিন`;
-        document.getElementById('nav-rank').textContent = metrics.rank !== '—' ? `#${metrics.rank}/১০০` : '#—/১০০';
+        document.getElementById('nav-rank').textContent = metrics.rank !== '—' ? `#${metrics.rank}/100` : '#—/100';
       }
 
       updateSyncBadge();
@@ -2671,9 +2704,9 @@
       const hscPart = (hsc * 12).toFixed(2);
       const finalGpa = calcGPA(ssc, hsc, isSecond).toFixed(2);
 
-      const penaltyText = isSecond ? ' - ৩' : '';
+      const penaltyText = isSecond ? ' - 3' : '';
       document.getElementById('su-gpa-formula').textContent = 
-        `SSC (${ssc.toFixed(2)} × ৮ = ${sscPart}) + HSC (${hsc.toFixed(2)} × ১২ = ${hscPart})${penaltyText} = ${finalGpa} / ১০০`;
+        `SSC (${ssc.toFixed(2)} × 8 = ${sscPart}) + HSC (${hsc.toFixed(2)} × 12 = ${hscPart})${penaltyText} = ${finalGpa} / 100`;
     }
 
     async function handleCreateStudent(e) {
@@ -2749,8 +2782,8 @@
         const meta200 = CATEGORY_DETAILS[cat200Key] || CATEGORY_DETAILS['Red Zone'];
         if (homeScoreHeader) {
           homeScoreHeader.textContent = student.marks.length > 0
-            ? `২০০ নম্বরে ${score200.toFixed(2)} / ২০০`
-            : `২০০ নম্বরে — / ২০০`;
+            ? `200 নম্বরে ${score200.toFixed(2)} / 200`
+            : `200 নম্বরে — / 200`;
         }
         if (catBadgeEl) {
           catBadgeEl.textContent = `ক্যাটাগরি: ${meta200.icon} ${meta200.en} (${meta200.bn})`;
@@ -2763,8 +2796,8 @@
         const meta100 = CATEGORY_DETAILS[cat100Key] || CATEGORY_DETAILS['Red Zone'];
         if (homeScoreHeader) {
           homeScoreHeader.textContent = student.marks.length > 0
-            ? `তোমার গড়: ${avg100.toFixed(2)} / ১০০`
-            : `তোমার গড়: — / ১০০`;
+            ? `তোমার গড়: ${avg100.toFixed(2)} / 100`
+            : `তোমার গড়: — / 100`;
         }
         if (catBadgeEl) {
           catBadgeEl.textContent = `ক্যাটাগরি: ${meta100.icon} ${meta100.en} (${meta100.bn})`;
@@ -2776,7 +2809,7 @@
 
       const catRankPill = document.getElementById('home-cat-rank-pill');
       if (catRankPill) {
-        catRankPill.textContent = m.rank !== '—' ? `📍 #${m.rank} / ১০০` : '📍 #— / ১০০';
+        catRankPill.textContent = m.rank !== '—' ? `📍 #${m.rank} / 100` : '📍 #— / 100';
       }
 
       // Rank orb
@@ -2792,25 +2825,25 @@
       }
 
       // Breakdown table
-      document.getElementById('row-ssc').textContent = `${m.sscScore.toFixed(2)} / ৪০`;
-      document.getElementById('row-hsc').textContent = `${m.hscScore.toFixed(2)} / ৬০`;
-      document.getElementById('row-base-gpa').textContent = `${m.baseGPA.toFixed(2)} / ১০০`;
+      document.getElementById('row-ssc').textContent = `${m.sscScore.toFixed(2)} / 40`;
+      document.getElementById('row-hsc').textContent = `${m.hscScore.toFixed(2)} / 60`;
+      document.getElementById('row-base-gpa').textContent = `${m.baseGPA.toFixed(2)} / 100`;
 
       const penaltyTr = document.getElementById('row-penalty-tr');
       if (student.isSecondTimer) {
         penaltyTr.classList.remove('hidden');
-        document.getElementById('row-penalty').textContent = '-৩.০০';
+        document.getElementById('row-penalty').textContent = '-3.00';
       } else {
         penaltyTr.classList.add('hidden');
       }
 
-      document.getElementById('row-written').textContent = m.totalAttempts > 0 ? `${m.writtenScore.toFixed(2)} / ১০০` : '—';
-      document.getElementById('row-total').textContent = `${m.grandTotal.toFixed(2)} / ২০০`;
+      document.getElementById('row-written').textContent = m.totalAttempts > 0 ? `${m.writtenScore.toFixed(2)} / 100` : '—';
+      document.getElementById('row-total').textContent = `${m.grandTotal.toFixed(2)} / 200`;
 
       // 4 Stat Cards
-      document.getElementById('stat-bio').textContent = m.bio.count > 0 ? `${Math.round(m.bio.avg)} / ১০০` : '—';
-      document.getElementById('stat-chem').textContent = m.chem.count > 0 ? `${Math.round(m.chem.avg)} / ১০০` : '—';
-      document.getElementById('stat-phy').textContent = m.phy.count > 0 ? `${Math.round(m.phy.avg)} / ১০০` : '—';
+      document.getElementById('stat-bio').textContent = m.bio.count > 0 ? `${Math.round(m.bio.avg)} / 100` : '—';
+      document.getElementById('stat-chem').textContent = m.chem.count > 0 ? `${Math.round(m.chem.avg)} / 100` : '—';
+      document.getElementById('stat-phy').textContent = m.phy.count > 0 ? `${Math.round(m.phy.avg)} / 100` : '—';
       document.getElementById('stat-overall').textContent = m.all.count > 0 ? `${m.all.count}টি পরীক্ষা` : '—';
 
       // Weak Chapters (<50% mastery)
@@ -2841,7 +2874,7 @@
                 <div class="status-dot rose"></div>
                 <span style="font-size: 13px; font-weight: 500;">${chap ? chap[1] : 'অধ্যায়'}</span>
               </div>
-              <span style="font-size: 13px; font-weight: 600;" class="text-rose">${w.avg}/১০০</span>
+              <span style="font-size: 13px; font-weight: 600;" class="text-rose">${w.avg}/100</span>
             </div>
           `;
         }).join('');
@@ -2866,14 +2899,14 @@
                   <div style="font-size: 11px; color: var(--text-dim);">${mk.date} ${mk.note ? '• ' + mk.note : ''}${mistakeLabel}</div>
                 </div>
               </div>
-              <span style="font-size: 13px; font-weight: 600;">${sc}/১০০</span>
+              <span style="font-size: 13px; font-weight: 600;">${sc}/100</span>
             </div>
           `;
         }).join('');
       }
 
       // Study Thinking Stats
-      renderThinkingStats(student);
+            renderExamCoach(student);
 
       // Update Nav stats
       setupNavForUser('student', student);
@@ -2989,7 +3022,7 @@
             data: {
               labels,
               datasets: [{
-                label: student.use200Scale ? '২০০ স্কেল অগ্রগতি' : '১০০ স্কেল অগ্রগতি',
+                label: student.use200Scale ? '200 স্কেল অগ্রগতি' : '100 স্কেল অগ্রগতি',
                 data: scores,
                 borderColor: '#818cf8',
                 backgroundColor: 'rgba(129, 140, 248, 0.15)',
@@ -3104,7 +3137,7 @@
         }
 
         const avgScore = paperScores.length > 0
-          ? `${Math.round(paperScores.reduce((a, b) => a + b, 0) / paperScores.length)} / ১০০`
+          ? `${Math.round(paperScores.reduce((a, b) => a + b, 0) / paperScores.length)} / 100`
           : '—';
         const progressPct = paperChapters.length > 0 ? Math.min(100, (attemptsCount / paperChapters.length) * 100) : 0;
 
@@ -3168,9 +3201,9 @@
               <div>
                 <div style="font-size: 14px; font-weight: 600; margin-bottom: 2px;">${item[1]}</div>
                 <div style="font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                  <span>🏆 সেরা: <b style="color: var(--text);">${bestScore}/১০০</b></span>
+                  <span>🏆 সেরা: <b style="color: var(--text);">${bestScore}/100</b></span>
                   <span style="color: var(--border);">|</span>
-                  <span>📈 শেষ: <b style="color: var(--text);">${latestScore}/১০০</b></span>
+                  <span>📈 শেষ: <b style="color: var(--text);">${latestScore}/100</b></span>
                   <span style="color: var(--border);">|</span>
                   <span>${attempts} মোট চেষ্টা</span>
                 </div>
@@ -3248,7 +3281,7 @@
                 <b style="color: var(--accent);">প্রচেষ্টা ${attemptNum}</b> · <span style="color: var(--text-muted);">${m.date || '—'}</span>
               </div>
               <div style="font-weight: 700; color: var(--text);">
-                ━━ <span style="color: ${sc100 >= 75 ? '#34d399' : sc100 >= 50 ? '#818cf8' : '#f87171'};">${sc100}/১০০</span>
+                ━━ <span style="color: ${sc100 >= 75 ? '#34d399' : sc100 >= 50 ? '#818cf8' : '#f87171'};">${sc100}/100</span>
               </div>
             </div>
             <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); font-size: 11px;">
@@ -3282,7 +3315,7 @@
 
       if (safeTotal <= 0) {
         isValid = false;
-        errorMsg = 'মোট প্রশ্ন সংখ্যা অবশ্যই ১ বা তার বেশি হতে হবে';
+        errorMsg = 'মোট প্রশ্ন সংখ্যা অবশ্যই 1 বা তার বেশি হতে হবে';
       } else if (safeCorrect < 0 || safeWrong < 0) {
         isValid = false;
         errorMsg = 'সংখ্যা ভুল — ঋণাত্মক হতে পারবে না';
@@ -3320,13 +3353,13 @@
               ───── GPA হিসাব (প্রোফাইল থেকে) ─────
             </div>
             <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-              <div>• SSC ${profileSSC} × ৮ = <b>${sscScore.toFixed(2)}</b></div>
-              <div>• HSC ${profileHSC} × ১২ = <b>${hscScore.toFixed(2)}</b></div>
-              <div>• Base: <b>${baseGPA.toFixed(2)}</b>${isSecondTimer ? ' <span style="color: #f87171;">(২য় বার জরিমানা −৩)</span>' : ''}</div>
-              <div>• Final GPA: <b>${finalGPA.toFixed(2)}</b> / ১০০</div>
+              <div>• SSC ${profileSSC} × 8 = <b>${sscScore.toFixed(2)}</b></div>
+              <div>• HSC ${profileHSC} × 12 = <b>${hscScore.toFixed(2)}</b></div>
+              <div>• Base: <b>${baseGPA.toFixed(2)}</b>${isSecondTimer ? ' <span style="color: #f87171;">(2য় বার জরিমানা −3)</span>' : ''}</div>
+              <div>• Final GPA: <b>${finalGPA.toFixed(2)}</b> / 100</div>
             </div>
             <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-top: 6px;">
-              🎯 ২০০ নম্বরে হিসাব: <span style="color: #38bdf8;">${score200.toFixed(2)} / ২০০</span>
+              🎯 200 নম্বরে হিসাব: <span style="color: #38bdf8;">${score200.toFixed(2)} / 200</span>
             </div>
           </div>
         `;
@@ -3341,11 +3374,11 @@
       previewBox.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: var(--text-muted);">নেগেটিভ মার্কিং:</span>
-          <span style="color: ${safeWrong > 0 ? '#f87171' : 'var(--text-dim)'}; font-weight: 600;">${safeWrong} × −০.২৫ = −${negPenalty.toFixed(2)}</span>
+          <span style="color: ${safeWrong > 0 ? '#f87171' : 'var(--text-dim)'}; font-weight: 600;">${safeWrong} × −0.25 = −${negPenalty.toFixed(2)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-          <span style="color: var(--text-muted);">১০০ নম্বরে এই প্রচেষ্টা:</span>
-          <span style="color: #34d399; font-size: 15px; font-weight: 700;">${curScore100} / ১০০</span>
+          <span style="color: var(--text-muted);">100 নম্বরে এই প্রচেষ্টা:</span>
+          <span style="color: #34d399; font-size: 15px; font-weight: 700;">${curScore100} / 100</span>
         </div>
         ${gpaSectionHtml}
       `;
@@ -3390,7 +3423,7 @@
       const errEl = document.getElementById('entry-error');
 
       if (isNaN(total) || total <= 0) {
-        if (errEl) errEl.textContent = 'মোট প্রশ্ন সংখ্যা অবশ্যই ১ বা তার বেশি হতে হবে';
+        if (errEl) errEl.textContent = 'মোট প্রশ্ন সংখ্যা অবশ্যই 1 বা তার বেশি হতে হবে';
         return;
       }
 
@@ -3519,7 +3552,7 @@
           <div style="border-top: 1px solid var(--border-subtle); margin: 12px 0;"></div>
 
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="color: var(--text-muted);">১০০ নম্বরে এই প্রচেষ্টা:</span>
+            <span style="color: var(--text-muted);">100 নম্বরে এই প্রচেষ্টা:</span>
             <span style="font-weight: 700; color: var(--text);">${attempt100}</span>
           </div>
 
@@ -3529,7 +3562,7 @@
               <span style="font-weight: 600; color: var(--text);">${gpaScore}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="color: var(--text-muted);">২০০ নম্বরে এই প্রচেষ্টা:</span>
+              <span style="color: var(--text-muted);">200 নম্বরে এই প্রচেষ্টা:</span>
               <span style="font-weight: 700; color: var(--accent);">${attempt200}</span>
             </div>
           ` : ''}
@@ -3544,7 +3577,7 @@
           </div>
 
           <div style="text-align: center; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent);">
-            📍 তুমি ১০০ জনের মধ্যে #${m.rank}
+            📍 তুমি 100 জনের মধ্যে #${m.rank}
           </div>
         </div>
       `;
@@ -3589,7 +3622,7 @@
 
       if (allBlocks.length === 0) {
         container.innerHTML = '<div class="empty-state">আজকের জন্য কোনো রুটিন নির্ধারিত নেই।</div>';
-        progressEl.textContent = '০ / ০ সম্পন্ন';
+        progressEl.textContent = '0 / 0 সম্পন্ন';
         return;
       }
 
@@ -3863,7 +3896,7 @@
       const emptyEl = document.getElementById('admin-chart-empty');
 
       const paperKeys = ['phy1', 'phy2', 'chem1', 'chem2', 'bio1', 'bio2'];
-      const paperLabels = ['পদার্থ ১', 'পদার্থ ২', 'রসায়ন ১', 'রসায়ন ২', 'বায়ো ১', 'বায়ো ২'];
+      const paperLabels = ['পদার্থ 1', 'পদার্থ 2', 'রসায়ন 1', 'রসায়ন 2', 'বায়ো 1', 'বায়ো 2'];
       const paperScores = [[], [], [], [], [], []];
 
       let totalEntries = 0;
@@ -3897,7 +3930,7 @@
         data: {
           labels: paperLabels,
           datasets: [{
-            label: 'ক্লাস গড় স্কোর (/১০০)',
+            label: 'ক্লাস গড় স্কোর (/100)',
             data: finalData,
             backgroundColor: 'rgba(129, 140, 248, 0.6)',
             borderColor: '#818cf8',
@@ -3948,7 +3981,7 @@
       document.getElementById('drill-name').innerHTML = `${student.name || 'শিক্ষার্থী'} ${verifiedBadge}`;
       document.getElementById('drill-email').textContent = student.email;
       document.getElementById('drill-meta').textContent = 
-        `SSC: ${student.ssc} | HSC: ${student.hsc} | ${student.isSecondTimer ? '২য় বার (-৩)' : '১ম বার'} | স্ট্রিক: ${student.streak || 0} দিন`;
+        `SSC: ${student.ssc} | HSC: ${student.hsc} | ${student.isSecondTimer ? '2য় বার (-3)' : '1ম বার'} | স্ট্রিক: ${student.streak || 0} দিন`;
       document.getElementById('drill-rank').textContent = m.rank !== '—' ? `#${m.rank}` : '#—';
 
       // Chart 1: Rank Trend
@@ -3981,7 +4014,7 @@
                   <div style="font-size: 11px; color: var(--text-dim);">${mk.date} ${mk.note ? '• ' + mk.note : ''}</div>
                 </div>
               </div>
-              <span style="font-size: 13px; font-weight: 600;">${sc}/১০০</span>
+              <span style="font-size: 13px; font-weight: 600;">${sc}/100</span>
             </div>
           `;
         }).join('');
@@ -4061,7 +4094,7 @@
       const empty = document.getElementById('drill-paper-empty');
 
       const paperKeys = ['phy1', 'phy2', 'chem1', 'chem2', 'bio1', 'bio2'];
-      const paperLabels = ['পদার্থ ১', 'পদার্থ ২', 'রসায়ন ১', 'রসায়ন ২', 'বায়ো ১', 'বায়ো ২'];
+      const paperLabels = ['পদার্থ 1', 'পদার্থ 2', 'রসায়ন 1', 'রসায়ন 2', 'বায়ো 1', 'বায়ো 2'];
       const paperScores = [[], [], [], [], [], []];
 
       (student.marks || []).forEach(mk => {
@@ -4082,7 +4115,7 @@
         data: {
           labels: paperLabels,
           datasets: [{
-            label: 'গড় (/১০০)',
+            label: 'গড় (/100)',
             data: paperData,
             backgroundColor: 'rgba(129, 140, 248, 0.6)',
             borderColor: '#818cf8',
@@ -4521,7 +4554,7 @@
 
     function stampLiveUpdated() {
       const el = document.getElementById('live-updated');
-      if (el) el.textContent = 'আপডেট: ' + new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (el) el.textContent = 'আপডেট: ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
     // KPI cards: value + trend context (never color-only — always ▲/▼/+/-).
@@ -4832,6 +4865,129 @@
       if (renderLiveKpis(student)) {
         renderLiveTrend(student);
         renderLiveInsights(student);
+      }
+    }
+        /* ── EXAM COACH: correct/wrong/skip donut + strategy analysis ── */
+    let coachDonutChart = null;
+
+    function renderExamCoach(student) {
+      const cv = document.getElementById('coach-donut');
+      if (!cv || typeof Chart === 'undefined') return;
+
+      let tC = 0, tW = 0, tS = 0;
+      (student.marks || []).forEach(m => {
+        tC += parseFloat(m.correct) || 0;
+        tW += parseFloat(m.wrong) || 0;
+        tS += parseFloat(m.skipped) || 0;
+      });
+      const total = tC + tW + tS;
+      const emptyEl = document.getElementById('coach-empty');
+      const wrapEl = document.getElementById('coach-content');
+      if (total === 0) {
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        if (wrapEl) wrapEl.classList.add('hidden');
+        return;
+      }
+      if (emptyEl) emptyEl.classList.add('hidden');
+      if (wrapEl) wrapEl.classList.remove('hidden');
+
+      const pct = (v) => Math.round((v / total) * 100);
+      const data = [tC, tW, tS];
+
+      if (coachDonutChart) {
+        coachDonutChart.data.datasets[0].data = data;
+        coachDonutChart.update();
+      } else {
+        coachDonutChart = new Chart(cv, {
+          type: 'doughnut',
+          data: {
+            labels: ['সঠিক', 'ভুল', 'স্কিপ'],
+            datasets: [{
+              data: data,
+              backgroundColor: ['#34d399', '#f87171', '#94a3b8'],
+              borderColor: '#0b0e13',
+              borderWidth: 3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, padding: 10, font: { size: 11 } } },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + 'টি (' + pct(c.parsed) + '%)' }
+              }
+            }
+          }
+        });
+      }
+
+      const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+      set('coach-kpi-correct', pct(tC) + '%');
+      set('coach-kpi-wrong', pct(tW) + '%');
+      set('coach-kpi-skip', pct(tS) + '%');
+      set('coach-neg', '−' + (tW * 0.25));
+
+      const box = document.getElementById('coach-insights');
+      if (!box) return;
+      box.textContent = '';
+      const add = (icon, text, color) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex'; row.style.gap = '8px'; row.style.alignItems = 'flex-start';
+        const ic = document.createElement('span'); ic.textContent = icon;
+        const tx = document.createElement('span'); tx.textContent = text;
+        if (color) tx.style.color = color;
+        row.appendChild(ic); row.appendChild(tx); box.appendChild(row);
+      };
+
+      const wrongPct = pct(tW), skipPct = pct(tS);
+      const attempted = tC + tW;
+      const accuracy = attempted > 0 ? Math.round((tC / attempted) * 100) : 0;
+
+      add('📊', 'অ্যাকুরেসি: ' + accuracy + '% — মেডিকেলে লক্ষ্য 85% বা তার বেশি রাখা।');
+
+      if (tW > 0) {
+        let cur = 0, skipScen = 0, n = 0;
+        (student.marks || []).forEach(m => {
+          const c = parseFloat(m.correct) || 0, w = parseFloat(m.wrong) || 0, s = parseFloat(m.skipped) || 0;
+          const t = c + w + s; if (t <= 0) return;
+          const sc = (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m);
+          cur += sc; skipScen += (c / t) * 100; n += 1;
+        });
+        if (n > 0) {
+          const gain = Math.round((skipScen - cur) / n);
+          add('💸', 'তোমার ' + Math.round(tW) + 'টা ভুল মোট ' + (tW * 0.25) + ' মার্ক কেটেছে (1 ভুল = 1.25 ক্ষতি!)। এগুলো স্কিপ করতে পারলে প্রতি পরীক্ষায় গড় ' + (gain > 0 ? '+' + gain : gain) + ' পয়েন্ট বেশি হতো।', '#fbbf24');
+        }
+      }
+
+      if (wrongPct > 12 && tW >= tS) {
+        add('🚫', 'ভুলের হার বেশি — আজাইরা গেস বন্ধ করো। আগে 2টা অপশন বাদ দাও, তখনই শুধু গেস। পুরো আন্দাজে লেখা মানে গ্যারান্টিড ক্ষতি।', '#f87171');
+      } else if (wrongPct <= 8 && tC > 0) {
+        add('✅', 'নেগেটিভ নিয়ন্ত্রণ চমৎকার — ভুল প্রায় নেই। এখন অতিরিক্ত স্কিপ কমিয়ে আরও প্রশ্ন আটকানোর চেষ্টা করো।', '#34d399');
+      }
+
+      if (skipPct > 35) {
+        add('🤔', 'স্কিপ ' + skipPct + '% — অনেক বেশি! বেশিরভাগ প্রশ্নে অন্তত 1-2টা অপশন বাদ দেওয়া যায়; বাদ দিতে পারলেই গেস লাভজনক হয়ে যায়।');
+      }
+
+      const withTotals = (student.marks || []).filter(m =>
+        (parseFloat(m.correct) || 0) + (parseFloat(m.wrong) || 0) + (parseFloat(m.skipped) || 0) > 0);
+      const last5 = withTotals.slice(-5);
+      if (last5.length >= 4) {
+        const half = Math.floor(last5.length / 2);
+        const wRate = (arr) => {
+          let a = 0, b = 0;
+          arr.forEach(m => {
+            a += parseFloat(m.wrong) || 0;
+            b += (parseFloat(m.correct) || 0) + (parseFloat(m.wrong) || 0) + (parseFloat(m.skipped) || 0);
+          });
+          return b > 0 ? (a / b) * 100 : 0;
+        };
+        const before = wRate(last5.slice(0, half)), after = wRate(last5.slice(half));
+        if (after - before > 3) add('📈', 'সাবধান: শেষ কয়েকটা পরীক্ষায় ভুলের হার বাড়ছে (' + Math.round(before) + '% → ' + Math.round(after) + '%)। তাড়ায় গেস বাড়ছে কি না দেখো।', '#fbbf24');
+        else if (before - after > 3) add('🎯', 'দুর্দান্ত: ভুলের হার কমছে (' + Math.round(before) + '% → ' + Math.round(after) + '%) — স্ট্র্যাটেজি কাজ করছে!', '#34d399');
       }
     }
     /* =========================================================================
