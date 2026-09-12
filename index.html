@@ -1548,7 +1548,7 @@
     window.MTDBAuthBlocked = null;
 
     let activeGoogleAuthPromise = null;
-
+    
     window.signInWithGoogleAuth = function() {
       if (activeGoogleAuthPromise) {
         return activeGoogleAuthPromise;
@@ -1564,7 +1564,20 @@
           window.MTDBAuthBlocked = null;
           window.MTDBUserEmail = user.email || '';
           console.log(`[AUTH] signed in as ${user?.email}`);
-          if (window.initMTDB) {
+      if (activeGoogleAuthPromise) {
+        return activeGoogleAuthPromise;
+      }
+
+      activeGoogleAuthPromise = (async () => {
+        try {
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+          // Success clears any previous auth/config block.
+          window.MTDBAuthBlocked = null;
+          window.MTDBUserEmail = user.email || '';
+          console.log(`[AUTH] signed in as ${user?.email}`);
             await window.initMTDB();
           }
           return {
