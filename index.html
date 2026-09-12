@@ -1002,6 +1002,11 @@
       <div class="card-title" style="margin-bottom: 16px;">
         <span style="font-size: 18px; font-weight: 700; color: var(--text);">বিষয়সমূহ নির্বাচন করুন</span>
       </div>
+            <div id="track-chips" style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+        <button type="button" class="chip" data-track="medical" onclick="setTrack('medical')">🩺 মেডিকেল ভর্তি</button>
+        <button type="button" class="chip" data-track="academic" onclick="setTrack('academic')">🎓 অ্যাকাডেমিক</button>
+        <button type="button" class="chip" data-track="varsity" onclick="setTrack('varsity')">🏛️ ভার্সিটি ভর্তি</button>
+      </div>
       <div class="subject-grid" id="subjects-grid">
         <!-- Rendered via JS -->
       </div>
@@ -1415,7 +1420,14 @@
         <div class="form-group">
           <label class="form-label">ইমেইল</label>
           <input type="email" id="su-email" class="form-input" placeholder="student@example.com" required />
-        </div>
+        </div>          <div class="form-group">
+            <label class="form-label">প্রস্তুতির ধরন</label>
+            <select id="su-track" class="form-input">
+              <option value="medical">মেডিকেল ভর্তি প্রস্তুতি</option>
+              <option value="academic">অ্যাকাডেমিক প্রস্তুতি (কলেজ)</option>
+              <option value="varsity">ভার্সিটি ভর্তি প্রস্তুতি</option>
+            </select>
+          </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">SSC GPA</label>
@@ -1821,7 +1833,16 @@
       ['bio2','মানব শারীরতত্ত্ব: চলন 4 অঙ্গচালনা'],
       ['bio2','মানব শারীরতত্ত্ব: সমন্বয় 4 নিয়ন্ত্রণ'],
       ['bio2','মানব জীবনের ধারাবাহিকতা'],['bio2','মানবদেহের প্রতিরক্ষা'],
-      ['bio2','জিনতত্ত্ব 4 বিবর্তন'],['bio2','প্রাণীর আচরণ']
+      ['bio2','জিনতত্ত্ব 4 বিবর্তন'],['bio2','প্রাণীর আচরণ'],
+      ['math1','ম্যাট্রিক্স ও নির্ণায়ক'],['math1','ভেক্টর'],['math1','সরলরেখা'],
+      ['math1','বৃত্ত'],['math1','বিন্যাস ও সমাবেশ'],['math1','ত্রিকোণমিতিক অনুপাত'],
+      ['math1','সংযুক্ত কোণের ত্রিকোণমিতিক অনুপাত'],['math1','ফাংশন ও ফাংশনের লেখচিত্র'],
+      ['math1','অন্তরীকরণ'],['math1','যোগজীকরণ'],
+      ['math2','বাস্তব সংখ্যা'],['math2','যোগাশ্রয়ী প্রোগ্রাম'],['math2','জটিল সংখ্যা'],
+      ['math2','বহুপদী ও বহুপদী সমীকরণ'],['math2','দ্বিপদী বিস্তৃতি'],['math2','কণিক'],
+      ['math2','বিপরীত ত্রিকোণমিতিক ফাংশন ও ত্রিকোনমিতিক সমীকরণ'],
+      ['math2','স্থিতিবিদ্যা'],['math2','সমতলে বস্তুকণার গতি'],
+      ['math2','বিস্তার পরিমাপ ও সম্ভাবনা']
     ];
 
     const PAPERS = {
@@ -1830,7 +1851,17 @@
       chem1: { name: 'রসায়ন 1ম পত্র', subject: 'chem' },
       chem2: { name: 'রসায়ন 2য় পত্র', subject: 'chem' },
       bio1: { name: 'বায়োলজি 1ম পত্র', subject: 'bio' },
-      bio2: { name: 'বায়োলজি 2য় পত্র', subject: 'bio' }
+      bio2: { name: 'বায়োলজি 2য় পত্র', subject: 'bio' },
+     math1: { name: 'উচ্চতর গণিত 1ম পত্র', subject: 'math' },
+      math2: { name: 'উচ্চতর গণিত 2য় পত্র', subject: 'math' }
+      
+    // ── Preparation tracks: medical (unchanged), academic, varsity ──
+    const TRACKS = {
+      medical:  { name: 'মেডিকেল ভর্তি',  papers: ['phy1','phy2','chem1','chem2','bio1','bio2'] },
+      academic: { name: 'অ্যাকাডেমিক',     papers: ['phy1','phy2','chem1','chem2','bio1','bio2','math1','math2'] },
+      varsity:  { name: 'ভার্সিটি ভর্তি',  papers: ['phy1','phy2','chem1','chem2','math1','math2','bio1','bio2'] }
+    };
+    let currentTrack = 'medical';
     };
 
     // Deterministic 100-student normal distribution N(110, 25) clamped [0, 200]
@@ -2417,23 +2448,7 @@
       else if (viewName === 'admin-routine') renderAdminRoutineBuilder();
       else if (viewName === 'live') renderLiveView();
       window.scrollTo(0, 0);
-
-      // Browser back button moves between app pages (SPA history).
-      if (!__navFromPop && viewName !== __navLastView) {
-        try { history.pushState({ mtView: viewName }, '', '#' + viewName); } catch (e) {}
-      }
-      __navFromPop = false;
-      __navLastView = viewName;
     }
-
-    let __navFromPop = false;
-    let __navLastView = null;
-    window.addEventListener('popstate', (e) => {
-      if (!state.currentUser) return;
-      const v = (e.state && e.state.mtView) ? e.state.mtView : (location.hash ? location.hash.slice(1) : 'home');
-      __navFromPop = true;
-      navigate(v);
-    });
 
     function handleBrandClick() {
       if (!state.currentUser) navigate('login');
@@ -2740,6 +2755,7 @@
       const ssc = parseFloat(document.getElementById('su-ssc').value) || 5.00;
       const hsc = parseFloat(document.getElementById('su-hsc').value) || 5.00;
       const isSecondTimer = document.getElementById('su-timer').value === 'true';
+      const track = document.getElementById('su-track') ? document.getElementById('su-track').value : 'medical';
 
       const studentId = pendingGoogleUser.uid;
 
@@ -2753,6 +2769,7 @@
         ssc: ssc.toFixed(2),
         hsc: hsc.toFixed(2),
         isSecondTimer,
+        track,
         marks: [],
         routines: [],
         completions: [],
@@ -2788,7 +2805,7 @@
 
       const avg100 = student.overallAvg100 || 0;
       const gpa = (student.gpaScore !== undefined ? student.gpaScore : calcGPA(student.ssc, student.hsc, student.isSecondTimer));
-      const score200 = avg100 + gpa;
+      const score200 = m.grandTotal;
 
       const homeScoreHeader = document.getElementById('home-score-header');
       const catBadgeEl = document.getElementById('home-category-badge');
@@ -3130,12 +3147,20 @@
     /* =========================================================================
        8. SUBJECTS & CHAPTERS
        ========================================================================= */
-    function renderSubjectsGrid() {
+        function setTrack(t) {
+      currentTrack = t;
+      const st = getCurrentStudent();
+      if (st && TRACKS[t]) { st.track = t; db_saveStudent(st); }
+      renderSubjectsGrid();
+    }function renderSubjectsGrid() {
       const student = getCurrentStudent();
       const grid = document.getElementById('subjects-grid');
+            if (student && student.track && TRACKS[student.track]) currentTrack = student.track;
       grid.innerHTML = '';
+      document.querySelectorAll('#track-chips .chip').forEach(c =>
+        c.classList.toggle('active', c.dataset.track === currentTrack));
 
-      Object.keys(PAPERS).forEach(paperKey => {
+      TRACKS[currentTrack].papers.forEach(paperKey => {
         const paper = PAPERS[paperKey];
         const paperChapters = SYLLABUS.filter(item => item[0] === paperKey);
         
@@ -4869,10 +4894,7 @@
           renderLiveInsights(student);
         }
         stampLiveUpdated();
-        if (typeof renderExamCoach === 'function') {
-          const cs = getCurrentStudent();
-          if (cs) renderExamCoach(cs);
-        }
+      }, 200);
     }
 
     function setLiveFilter(sub) {
@@ -4935,11 +4957,7 @@
             plugins: {
               legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, padding: 10, font: { size: 11 } } },
               tooltip: {
-                backgroundColor: '#1e293b',callbacks: { label: (c) => {
-                  const arr = c.chart.data.datasets[0].data;
-                  const t = arr.reduce((a, b) => a + b, 0) || 1;
-                  return ' ' + c.label + ': ' + c.parsed + 'টি (' + Math.round((c.parsed / t) * 100) + '%)';
-                } }
+                backgroundColor: '#1e293b',callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + 'টি (' + pct(c.parsed) + '%)' }
                 
               }
             }
