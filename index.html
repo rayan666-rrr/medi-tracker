@@ -1002,11 +1002,6 @@
       <div class="card-title" style="margin-bottom: 16px;">
         <span style="font-size: 18px; font-weight: 700; color: var(--text);">বিষয়সমূহ নির্বাচন করুন</span>
       </div>
-            <div id="track-chips" style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-        <button type="button" class="chip" data-track="medical" onclick="setTrack('medical')">🩺 মেডিকেল ভর্তি</button>
-        <button type="button" class="chip" data-track="academic" onclick="setTrack('academic')">🎓 অ্যাকাডেমিক</button>
-        <button type="button" class="chip" data-track="varsity" onclick="setTrack('varsity')">🏛️ ভার্সিটি ভর্তি</button>
-      </div>
       <div class="subject-grid" id="subjects-grid">
         <!-- Rendered via JS -->
       </div>
@@ -1060,6 +1055,25 @@
           <div class="form-group" style="margin-bottom: 12px;">
             <label class="form-label" style="font-size: 12px;">তারিখ</label>
             <input type="date" id="entry-date" class="form-input" required />
+          </div>
+
+          <div class="form-group" id="entry-qtype-toggle" style="display:none; margin-bottom:12px;">
+            <label class="form-label" style="font-size: 12px;">প্রশ্নের ধরন</label>
+            <div style="display:flex; gap:8px;">
+              <button type="button" id="qt-btn-mcq" class="btn btn-secondary" style="flex:1;" onclick="setEntryQType('mcq')">📄 বহুনির্বাচনি (25%)</button>
+              <button type="button" id="qt-btn-cq" class="btn btn-secondary" style="flex:1;" onclick="setEntryQType('cq')">✍️ সৃজনশীল (50%)</button>
+            </div>
+          </div>
+
+          <div class="form-row" id="cq-fields-row" style="display:none; margin-bottom:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size: 12px;">পূর্ণমান (Total):</label>
+              <input type="number" id="entry-cq-total" class="form-input" min="1" value="50" oninput="updateCqPreview()" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size: 12px;">অর্জিত মান (Gained):</label>
+              <input type="number" id="entry-cq-got" class="form-input" min="0" oninput="updateCqPreview()" />
+            </div>
           </div>
 
           <div class="form-row" style="margin-bottom: 12px;">
@@ -1159,6 +1173,15 @@
               <option value="true">2য় বার পরীক্ষার্থী (-3 নম্বর পেনাল্টি)</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">প্রস্তুতির ধরন (ট্র্যাক)</label>
+            <select id="set-track" class="form-select">
+              <option value="medical">🩺 মেডিকেল ভর্তি প্রস্তুতি</option>
+              <option value="academic">🎓 অ্যাকাডেমিক প্রস্তুতি (কলেজ)</option>
+              <option value="varsity">🏛️ ভার্সিটি ভর্তি প্রস্তুতি</option>
+            </select>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">বদলে সেভ করলে বিষয়সমূহ-এ নতুন ট্র্যাকের পত্রগুলো দেখাবে</div>
+          </div>
           <!-- 200 Scale Toggle Row -->
           <div class="form-group" style="background: var(--card-elevated); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
             <div>
@@ -1172,6 +1195,12 @@
           </div>
 
           <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">সংরক্ষণ করুন</button>
+
+          <div style="margin-top: 14px; border: 1px solid rgba(248,113,113,.35); background: rgba(248,113,113,.06); border-radius: var(--radius-sm); padding: 14px;">
+            <div style="font-size: 13px; font-weight: 700; color: #f87171; margin-bottom: 4px;">⚠️ বিপদ অঞ্চল</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">অ্যাকাউন্ট ডিলিট করলে প্রোফাইল ও সব পরীক্ষার নম্বর — ক্লাউডসহ চিরতরে মুছে যাবে। ফেরানো যাবে না।</div>
+            <button type="button" class="btn btn-secondary btn-block" style="color: #f87171; border-color: rgba(248,113,113,.4);" onclick="deleteMyAccount()">🗑️ আমার অ্যাকাউন্ট সম্পূর্ণ ডিলিট করুন</button>
+          </div>
 
           <!-- Milestones Vertical Timeline -->
           <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 18px;">
@@ -1420,14 +1449,6 @@
         <div class="form-group">
           <label class="form-label">ইমেইল</label>
           <input type="email" id="su-email" class="form-input" placeholder="student@example.com" required />
-        </div>          <div class="form-group">
-            <label class="form-label">প্রস্তুতির ধরন</label>
-            <select id="su-track" class="form-input">
-              <option value="medical">মেডিকেল ভর্তি প্রস্তুতি</option>
-              <option value="academic">অ্যাকাডেমিক প্রস্তুতি (কলেজ)</option>
-              <option value="varsity">ভার্সিটি ভর্তি প্রস্তুতি</option>
-            </select>
-          </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">SSC GPA</label>
@@ -1443,6 +1464,14 @@
           <select id="su-timer" class="form-select" onchange="updateLiveGpaPreview()">
             <option value="false">1ম বার পরীক্ষার্থী (কোনো পেনাল্টি নেই)</option>
             <option value="true">2য় বার পরীক্ষার্থী (-3 নম্বর পেনাল্টি)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">প্রস্তুতির ধরন</label>
+          <select id="su-track" class="form-select">
+            <option value="medical">মেডিকেল ভর্তি প্রস্তুতি</option>
+            <option value="academic">অ্যাকাডেমিক প্রস্তুতি (কলেজ)</option>
+            <option value="varsity">ভার্সিটি ভর্তি প্রস্তুতি</option>
           </select>
         </div>
         <!-- Live GPA Preview -->
@@ -1480,7 +1509,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import {
       getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc
@@ -1535,6 +1564,18 @@
     const auth = getAuth(app);
     const db = getFirestore(app, FIRESTORE_DB_ID);
 
+    window.MTDeleteAuthUser = async function() {
+      try {
+        const u = auth.currentUser;
+        if (!u) return { ok: false, code: 'no-user' };
+        await deleteUser(u);
+        return { ok: true };
+      } catch (e) {
+        console.warn('[AUTH] deleteUser error:', e);
+        return { ok: false, code: (e && e.code) || 'error' };
+      }
+    };
+
     window.signOutFirebase = async function() {
       try {
         await signOut(auth);
@@ -1548,8 +1589,8 @@
     window.MTDBAuthBlocked = null;
 
     let activeGoogleAuthPromise = null;
-    
-    window.signInWithGoogleAuth = function() {
+
+        window.signInWithGoogleAuth = function() {
       if (activeGoogleAuthPromise) {
         return activeGoogleAuthPromise;
       }
@@ -1564,20 +1605,7 @@
           window.MTDBAuthBlocked = null;
           window.MTDBUserEmail = user.email || '';
           console.log(`[AUTH] signed in as ${user?.email}`);
-      if (activeGoogleAuthPromise) {
-        return activeGoogleAuthPromise;
-      }
-
-      activeGoogleAuthPromise = (async () => {
-        try {
-          const provider = new GoogleAuthProvider();
-          provider.setCustomParameters({ prompt: 'select_account' });
-          const result = await signInWithPopup(auth, provider);
-          const user = result.user;
-          // Success clears any previous auth/config block.
-          window.MTDBAuthBlocked = null;
-          window.MTDBUserEmail = user.email || '';
-          console.log(`[AUTH] signed in as ${user?.email}`);
+          if (window.initMTDB) {
             await window.initMTDB();
           }
           return {
@@ -1604,8 +1632,6 @@
             };
           }
           console.error('[Auth] Google sign-in failed:', err);
-          // Config-level blockers get their own badge state (offline mode with
-          // the console fix-it path) instead of a generic "click to sign in".
           if (code === 'auth/unauthorized-domain' || code === 'auth/operation-not-allowed') {
             window.MTDBAuthBlocked = err;
           }
@@ -1622,7 +1648,7 @@
       return activeGoogleAuthPromise;
     };
 
-    // Bengali, actionable hint for a raw auth error code. Exposed on window so
+// Bengali, actionable hint for a raw auth error code. Exposed on window so
     // the classic (non-module) app script can use it too.
     window.authErrorHint = function(rawError) {
       const code = String(rawError || '');
@@ -1867,6 +1893,7 @@
       bio2: { name: 'বায়োলজি 2য় পত্র', subject: 'bio' },
      math1: { name: 'উচ্চতর গণিত 1ম পত্র', subject: 'math' },
       math2: { name: 'উচ্চতর গণিত 2য় পত্র', subject: 'math' }
+    };
       
     // ── Preparation tracks: medical (unchanged), academic, varsity ──
     const TRACKS = {
@@ -1875,7 +1902,6 @@
       varsity:  { name: 'ভার্সিটি ভর্তি',  papers: ['phy1','phy2','chem1','chem2','math1','math2','bio1','bio2'] }
     };
     let currentTrack = 'medical';
-    };
 
     // Deterministic 100-student normal distribution N(110, 25) clamped [0, 200]
     const DIST_SAMPLES = [];
@@ -2134,6 +2160,7 @@
     function migrateStudentMarks(p) {
       if (!p || !Array.isArray(p.marks)) return;
       p.marks.forEach(m => {
+        if (m.qType === 'mcq' || m.qType === 'cq') return; // track marks: score100 stored
         const tot = parseFloat(m.total) || 1;
         const corr = parseFloat(m.correct) || 0;
         if (m.wrong === null || m.wrong === undefined) {
@@ -2429,7 +2456,34 @@
       'view-student-analytics', 'view-admin-routine', 'view-live'
     ];
 
+    function goMtBack() {
+      if (!window.__mtViewStack || window.__mtViewStack.length === 0) return;
+      const prev = window.__mtViewStack.pop();
+      window.__mtBackGoing = true;
+      navigate(prev);
+    }
+    function updateBackBtn() {
+      let b = document.getElementById('mt-back-btn');
+      if (!b) {
+        b = document.createElement('button');
+        b.id = 'mt-back-btn';
+        b.type = 'button';
+        b.onclick = goMtBack;
+        b.style.cssText = 'position:fixed; left:16px; bottom:16px; z-index:900; display:none; align-items:center; gap:6px; padding:10px 16px; border-radius:999px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.35);';
+        b.innerHTML = '← পেছনে';
+        document.body.appendChild(b);
+      }
+      const show = window.__mtViewStack && window.__mtViewStack.length > 0;
+      b.style.display = show ? 'flex' : 'none';
+    }
     function navigate(viewName) {
+      if (!window.__mtViewStack) window.__mtViewStack = [];
+      if (window.__mtBackGoing) { window.__mtBackGoing = false; }
+      else {
+        if (window.__mtCurrentView && window.__mtCurrentView !== viewName) window.__mtViewStack.push(window.__mtCurrentView);
+        if (window.__mtViewStack.length > 40) window.__mtViewStack.shift();
+      }
+      window.__mtCurrentView = viewName;
       VIEWS.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -2461,6 +2515,7 @@
       else if (viewName === 'admin-routine') renderAdminRoutineBuilder();
       else if (viewName === 'live') renderLiveView();
       window.scrollTo(0, 0);
+      if (typeof updateBackBtn === 'function') updateBackBtn();
     }
 
     function handleBrandClick() {
@@ -2603,6 +2658,18 @@
       }
     }
 
+    function updateSignupTrackFields() {
+      const sel = document.getElementById('su-track');
+      const isMed = !sel || sel.value === 'medical';
+      const row = document.getElementById('su-ssc') ? document.getElementById('su-ssc').closest('.form-row') : null;
+      if (row) row.style.display = isMed ? '' : 'none';
+      const tg = document.getElementById('su-timer') ? document.getElementById('su-timer').closest('.form-group') : null;
+      if (tg) tg.style.display = isMed ? '' : 'none';
+      const f = document.getElementById('su-gpa-formula');
+      if (f && f.parentElement) f.parentElement.style.display = isMed ? '' : 'none';
+    }
+    document.addEventListener('change', (e) => { if (e.target && e.target.id === 'su-track') updateSignupTrackFields(); });
+
     function openSignUpModalForGoogle(authUser) {
       pendingGoogleUser = authUser;
       const modalTitle = document.getElementById('signup-modal-title');
@@ -2623,6 +2690,7 @@
       if (sscInput) sscInput.value = '5.00';
       if (hscInput) hscInput.value = '5.00';
       if (timerInput) timerInput.value = 'false';
+      if (typeof updateSignupTrackFields === 'function') updateSignupTrackFields();
 
       updateLiveGpaPreview();
       openModal('modal-signup');
@@ -2783,6 +2851,7 @@
         hsc: hsc.toFixed(2),
         isSecondTimer,
         track,
+        track,
         marks: [],
         routines: [],
         completions: [],
@@ -2809,9 +2878,83 @@
     let thinkingProgressionChartInstance = null;
     let thinkingMistakeChartInstance = null;
 
+    function trackHomeAgg(student) {
+      const a = { mcqC: 0, mcqW: 0, mcqS: 0, mcqN: 0, mcqSumPct: 0, cqGot: 0, cqTot: 0, cqN: 0, cqSumPct: 0, recent: [] };
+      const ms = (student && Array.isArray(student.marks)) ? student.marks.filter(m => m.qType === 'mcq' || m.qType === 'cq') : [];
+      ms.forEach(m => {
+        if (m.qType === 'mcq') { a.mcqC += (m.correct || 0); a.mcqW += (m.wrong || 0); a.mcqS += (m.skipped || 0); a.mcqN++; a.mcqSumPct += (m.score100 || 0); }
+        else { a.cqGot += (m.obtainedMarks || 0); a.cqTot += (m.totalMarks || 0); a.cqN++; const t = m.totalMarks || 0; a.cqSumPct += t > 0 ? ((m.obtainedMarks || 0) / t) * 100 : 0; }
+      });
+      a.recent = ms.slice().sort((x, y) => (y.date || '').localeCompare(x.date || '')).slice(0, 8);
+      return a;
+    }
+    function setTrackHomeMode(m) { window.__mtTrackMode = m; const st = getCurrentStudent(); if (st) renderTrackHome(st); }
+    function renderTrackHome(student) {
+      const home = document.getElementById('view-home');
+      if (!home) return;
+      if (!window.__mtTrackDashHost) {
+        window.__mtTrackDashHost = document.createElement('div');
+        window.__mtTrackDashHost.id = 'track-dash-host';
+        home.insertBefore(window.__mtTrackDashHost, home.firstChild);
+      }
+      Array.from(home.children).forEach(ch => { if (ch !== window.__mtTrackDashHost) ch.style.display = 'none'; });
+      const agg = trackHomeAgg(student);
+      const mode = window.__mtTrackMode || 'comb';
+      const trk = resolveTrack();
+      const tName = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].name : '';
+      const mcqAll = agg.mcqC + agg.mcqW + agg.mcqS;
+      const mAll = agg.mcqN ? (agg.mcqSumPct / agg.mcqN) * 0.25 : null;
+      const cAll = agg.cqN ? (agg.cqSumPct / agg.cqN) * 0.50 : null;
+      const pct = (v, t) => (t > 0 ? Math.round((v / t) * 100) : 0);
+      const btn = (m, label) => '<button type="button" class="btn btn-secondary" style="flex:1;' + (mode === m ? ' background: var(--accent); color:#fff; border-color: var(--accent);' : '') + '" onclick="setTrackHomeMode(\'' + m + '\')">' + label + '</button>';
+      const mcqPie = '<div style="flex:1; min-width:210px; text-align:center;"><canvas id="t-mcq-pie" width="200" height="200"></canvas><div style="font-size:12px; margin-top:8px; line-height:1.7;"><b style="color:#34d399;">সঠিক ' + pct(agg.mcqC, mcqAll) + '%</b> • <b style="color:#f87171;">ভুল ' + pct(agg.mcqW, mcqAll) + '%</b> • <b style="color:#94a3b8;">স্কিপ ' + pct(agg.mcqS, mcqAll) + '%</b><br/><span style="color:var(--text-muted);">বহুনির্বাচনি গড়: <b style="color:var(--accent);">' + (mAll === null ? '—' : mAll.toFixed(2) + ' / 25') + '</b></span></div></div>';
+      const cqPie = '<div style="flex:1; min-width:210px; text-align:center;"><canvas id="t-cq-pie" width="200" height="200"></canvas><div style="font-size:12px; margin-top:8px; line-height:1.7;"><b style="color:#34d399;">অর্জিত ' + pct(agg.cqGot, agg.cqTot) + '%</b> • <b style="color:#f87171;">হারানো ' + pct(Math.max(0, agg.cqTot - agg.cqGot), agg.cqTot) + '%</b><br/><span style="color:var(--text-muted);">সৃজনশীল গড়: <b style="color:var(--accent);">' + (cAll === null ? '—' : cAll.toFixed(2) + ' / 50') + '</b></span></div></div>';
+      let chartHtml = '';
+      if (mode === 'mcq') chartHtml = mcqPie;
+      else if (mode === 'cq') chartHtml = cqPie;
+      else chartHtml = mcqPie + cqPie + '<div style="flex-basis:100%; text-align:center; font-size:14px; margin-top:6px;">মোট সম্মিলিত: <b style="color:var(--accent); font-size:18px;">' + ((mAll || 0) + (cAll || 0)).toFixed(2) + ' / 75</b></div>';
+      const papers = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].papers : [];
+      let sum25 = 0, sum50 = 0;
+      const tableRows = papers.map(pk => {
+        const p = (typeof trackPaper75Parts === 'function') ? trackPaper75Parts(student, pk) : null;
+        const m25 = p ? p.m25 : 0, c50 = p ? p.c50 : 0;
+        sum25 += m25; sum50 += c50;
+        const nm = (typeof PAPERS !== 'undefined' && PAPERS[pk]) ? PAPERS[pk].name : pk;
+        return '<tr style="border-top:1px solid var(--border);"><td style="padding:7px 4px;">' + nm + '</td><td style="padding:7px 4px;">' + m25.toFixed(2) + '</td><td style="padding:7px 4px;">' + c50.toFixed(2) + '</td><td style="padding:7px 4px;"><b style="color:var(--accent);">' + (m25 + c50).toFixed(2) + '</b></td></tr>';
+      }).join('') + '<tr style="border-top:2px solid var(--accent-border);"><td style="padding:8px 4px; font-weight:700;">সর্বমোট</td><td style="padding:8px 4px; font-weight:700;">' + sum25.toFixed(2) + ' / 25</td><td style="padding:8px 4px; font-weight:700;">' + sum50.toFixed(2) + ' / 50</td><td style="padding:8px 4px;"><b style="color:var(--accent); font-size:15px;">' + (sum25 + sum50).toFixed(2) + ' / 75</b></td></tr>';
+      const recentHtml = agg.recent.length === 0 ? '<div style="color:var(--text-dim); font-size:13px;">এখনো কোনো এন্ট্রি নেই — বিষয়সমূহ থেকে অধ্যায়ে এন্ট্রি দাও।</div>' : agg.recent.map(m => {
+        const chap = (typeof SYLLABUS !== 'undefined' && SYLLABUS[m.chapterId]) ? SYLLABUS[m.chapterId] : null;
+        const chapName = chap ? chap[1] : 'অধ্যায়';
+        const paperName = (chap && typeof PAPERS !== 'undefined' && PAPERS[chap[0]]) ? PAPERS[chap[0]].name : '';
+        const isMcq = m.qType === 'mcq';
+        const val = ((m.score100 || 0) * (isMcq ? 0.25 : 0.5)).toFixed(2) + (isMcq ? ' / 25' : ' / 50');
+        return '<div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px;"><span>' + (isMcq ? '📄' : '✍️') + ' ' + chapName + ' <span style="color:var(--text-dim); font-size:11px;">' + paperName + '</span></span><span style="white-space:nowrap;"><b style="color:var(--accent);">' + val + '</b> <span style="color:var(--text-dim); font-size:11px;">' + (m.date || '') + '</span></span></div>';
+      }).join('');
+      window.__mtTrackDashHost.innerHTML =
+        '<div class="card" style="margin-bottom:16px;"><div class="card-title">🎯 ' + tName + ' ড্যাশবোর্ড</div>' +
+        '<div style="display:flex; gap:8px; margin-bottom:14px;">' + btn('mcq', '📄 বহুনির্বাচনি (25%)') + btn('cq', '✍️ সৃজনশীল (50%)') + btn('comb', '🧮 সম্মিলিত (75%)') + '</div>' +
+        '<div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:center;">' + chartHtml + '</div></div>' +
+        '<div class="card" style="margin-bottom:16px;"><div class="card-title">📊 পত্রপ্রতি স্কোর (25 + 50 = 75)</div>' +
+        '<div style="overflow-x:auto;"><table style="width:100%; font-size:13px; border-collapse:collapse;"><thead><tr style="color:var(--text-muted); text-align:left;"><th style="padding:6px 4px;">পত্র</th><th style="padding:6px 4px;">বহুনির্বাচনি /25</th><th style="padding:6px 4px;">সৃজনশীল /50</th><th style="padding:6px 4px;">মোট /75</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div>' +
+        '<div class="card"><div class="card-title">🕒 সাম্প্রতিক এন্ট্রি</div>' + recentHtml + '</div>';
+      if (window.__tChart1) { try { window.__tChart1.destroy(); } catch (e) {} window.__tChart1 = null; }
+      if (window.__tChart2) { try { window.__tChart2.destroy(); } catch (e) {} window.__tChart2 = null; }
+      const c1 = document.getElementById('t-mcq-pie');
+      if (c1 && typeof Chart !== 'undefined') window.__tChart1 = new Chart(c1, { type: 'doughnut', data: { labels: ['সঠিক', 'ভুল', 'স্কিপ'], datasets: [{ data: [agg.mcqC, agg.mcqW, agg.mcqS], backgroundColor: ['#34d399', '#f87171', '#94a3b8'] }] }, options: { cutout: '58%', plugins: { legend: { display: false } } } });
+      const c2 = document.getElementById('t-cq-pie');
+      if (c2 && typeof Chart !== 'undefined') window.__tChart2 = new Chart(c2, { type: 'doughnut', data: { labels: ['অর্জিত', 'হারানো'], datasets: [{ data: [agg.cqGot, Math.max(0, agg.cqTot - agg.cqGot)], backgroundColor: ['#34d399', '#f87171'] }] }, options: { cutout: '58%', plugins: { legend: { display: false } } } });
+    }
     function renderStudentHome() {
       const student = getCurrentStudent();
       if (!student) return;
+      if (typeof isTrackBased === 'function' && isTrackBased()) {
+        if (typeof renderTrackHome === 'function') { renderTrackHome(student); return; }
+      } else if (window.__mtTrackDashHost && window.__mtTrackDashHost.parentElement) {
+        const __h = document.getElementById('view-home');
+        if (__h) Array.from(__h.children).forEach(__ch => { if (__ch !== window.__mtTrackDashHost) __ch.style.display = ''; });
+        window.__mtTrackDashHost.remove();
+        window.__mtTrackDashHost = null;
+      }
 
       refreshStudentCategories(student);
       const m = calculateStudentMetrics(student);
@@ -3190,9 +3333,12 @@
           });
         }
 
-        const avgScore = paperScores.length > 0
+      const w75 = (typeof trackPaper75 === 'function') ? trackPaper75(student, paperKey) : null;
+      const avgScore = (typeof isTrackBased === 'function' && isTrackBased())
+        ? (w75 !== null ? w75.toFixed(1) + ' / 75' : '—')
+        : (paperScores.length > 0
           ? `${Math.round(paperScores.reduce((a, b) => a + b, 0) / paperScores.length)} / 100`
-          : '—';
+          : '—');
         const progressPct = paperChapters.length > 0 ? Math.min(100, (attemptsCount / paperChapters.length) * 100) : 0;
 
         const card = document.createElement('div');
@@ -3224,6 +3370,15 @@
       document.getElementById('paper-view-title').textContent = PAPERS[paperKey].name;
       const list = document.getElementById('paper-chapters-list');
       list.innerHTML = '';
+      if (typeof isTrackBased === 'function' && isTrackBased()) {
+        const parts = (typeof trackPaper75Parts === 'function') ? trackPaper75Parts(student, paperKey) : null;
+        const box = document.createElement('div');
+        box.style.cssText = 'background: var(--card-elevated); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.7;';
+        box.innerHTML = parts === null
+          ? '<b>এই পত্রের স্কোর:</b> <span style="color: var(--text-dim);">এন্ট্রি দিলে এখানে দেখাবে — বহুনির্বাচনি /25 • সৃজনশীল /50 • মোট /75</span>'
+          : '<b>এই পত্রের স্কোর:</b> বহুনির্বাচনি <b>' + parts.m25.toFixed(2) + '</b>/25 • সৃজনশীল <b>' + parts.c50.toFixed(2) + '</b>/50 • <b style="color: var(--accent); font-size: 15px;">মোট ' + (parts.m25 + parts.c50).toFixed(2) + '/75</b>';
+        list.appendChild(box);
+      }
 
       SYLLABUS.forEach((item, idx) => {
         if (item[0] !== paperKey) return;
@@ -3255,7 +3410,7 @@
               <div>
                 <div style="font-size: 14px; font-weight: 600; margin-bottom: 2px;">${item[1]}</div>
                 <div style="font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                  <span>🏆 সেরা: <b style="color: var(--text);">${bestScore}/100</b></span>
+                  <span>🏆 সেরা: <b style="color: var(--text);">${(typeof isTrackBased === 'function' && isTrackBased()) ? bestScore + '%' : bestScore + '/100'}</b></span>
                   <span style="color: var(--border);">|</span>
                   <span>📈 শেষ: <b style="color: var(--text);">${latestScore}/100</b></span>
                   <span style="color: var(--border);">|</span>
@@ -3324,6 +3479,11 @@
       listEl.innerHTML = reversed.map((m, revIdx) => {
         const attemptNum = chapMarks.length - revIdx;
         const sc100 = (m.score100 !== undefined && m.score100 !== null) ? m.score100 : score100(m);
+        let scoreTxt = sc100 + '/100';
+        if (typeof isTrackBased === 'function' && isTrackBased()) {
+          const wv = sc100 * (m.qType === 'cq' ? 0.5 : 0.25);
+          scoreTxt = wv.toFixed(1) + '/' + (m.qType === 'cq' ? 50 : 25);
+        }
         const detailId = `history-detail-${attemptNum}-${revIdx}`;
         const mistakeStr = m.mistakeCategory ? ` • ভুল: ${m.mistakeCategory}` : '';
         const noteStr = m.note ? ` • ${m.note}` : '';
@@ -3335,15 +3495,76 @@
                 <b style="color: var(--accent);">প্রচেষ্টা ${attemptNum}</b> · <span style="color: var(--text-muted);">${m.date || '—'}</span>
               </div>
               <div style="font-weight: 700; color: var(--text);">
-                ━━ <span style="color: ${sc100 >= 75 ? '#34d399' : sc100 >= 50 ? '#818cf8' : '#f87171'};">${sc100}/100</span>
+                ━━ <span style="color: ${sc100 >= 75 ? '#34d399' : sc100 >= 50 ? '#818cf8' : '#f87171'};">${scoreTxt}</span>
               </div>
             </div>
             <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); font-size: 11px;">
-              <span>সঠিক ${m.correct || 0} | ভুল ${m.wrong || 0} | স্কিপড ${m.skipped || 0}${mistakeStr}${noteStr}</span>
+              <span>${(m.qType === 'cq') ? ('অর্জিত ' + (m.obtainedMarks || 0) + ' / পূর্ণমান ' + (m.totalMarks || 0)) : ('সঠিক ' + (m.correct || 0) + ' | ভুল ' + (m.wrong || 0) + ' | স্কিপড ' + (m.skipped || 0))}${mistakeStr}${noteStr}</span>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    let entryQType = 'mcq';
+    function resolveTrack() {
+      const st = (typeof getCurrentStudent === 'function') ? getCurrentStudent() : null;
+      if (st && st.track && typeof TRACKS !== 'undefined' && TRACKS[st.track]) return st.track;
+      if (typeof currentTrack !== 'undefined' && typeof TRACKS !== 'undefined' && TRACKS[currentTrack]) return currentTrack;
+      return 'medical';
+    }
+    function isTrackBased() { return resolveTrack() !== 'medical'; }
+    function setEntryQType(t) { entryQType = t; if (typeof updateEntryTypeUI === 'function') updateEntryTypeUI(); }
+    function updateEntryTypeUI() {
+      const tb = isTrackBased();
+      const tg = document.getElementById('entry-qtype-toggle');
+      if (tg) tg.style.display = tb ? '' : 'none';
+      const bm = document.getElementById('qt-btn-mcq');
+      const bc = document.getElementById('qt-btn-cq');
+      const on = 'flex:1; background: var(--accent); color: #fff; border-color: var(--accent);';
+      const off = 'flex:1;';
+      if (bm) bm.style.cssText = (tb && entryQType === 'mcq') ? on : off;
+      if (bc) bc.style.cssText = (tb && entryQType === 'cq') ? on : off;
+      const row1 = document.getElementById('entry-total') ? document.getElementById('entry-total').closest('.form-row') : null;
+      const row2 = document.getElementById('entry-wrong') ? document.getElementById('entry-wrong').closest('.form-row') : null;
+      const cqRow = document.getElementById('cq-fields-row');
+      const showMcq = !tb || entryQType === 'mcq';
+      if (row1) row1.style.display = showMcq ? '' : 'none';
+      if (row2) row2.style.display = showMcq ? '' : 'none';
+      if (cqRow) cqRow.style.display = (tb && entryQType === 'cq') ? '' : 'none';
+      const pv = document.getElementById('entry-live-preview-box');
+      if (pv) pv.style.display = (tb && entryQType === 'cq') ? '' : (tb ? 'none' : '');
+      if (tb && entryQType === 'cq' && typeof updateCqPreview === 'function') updateCqPreview();
+    }
+    function updateCqPreview() {
+      const pv = document.getElementById('entry-live-preview-box');
+      if (!pv) return;
+      const t = parseFloat(document.getElementById('entry-cq-total').value);
+      const g = parseFloat(document.getElementById('entry-cq-got').value);
+      const errEl = document.getElementById('entry-error');
+      let msg = '';
+      if (isNaN(t) || t <= 0) msg = 'পূর্ণমান অবশ্যই 1 বা তার বেশি হতে হবে';
+      else if (!isNaN(g) && (g < 0 || g > t)) msg = 'অর্জিত মান পূর্ণমানের বেশি হতে পারবে না';
+      if (errEl) errEl.textContent = msg;
+      const pct = (!isNaN(t) && t > 0 && !isNaN(g)) ? (g / t) * 100 : null;
+      pv.innerHTML =
+        '<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">সৃজনশীল শতকরা:</span><span style="font-weight:600;">' + (pct === null ? '—' : pct.toFixed(1) + '%') + '</span></div>' +
+        '<div style="display:flex; justify-content:space-between; margin-top:4px;"><span style="color:var(--text-muted);">সৃজনশীল (50% ওজন):</span><span style="color:#34d399; font-weight:700;">' + (pct === null ? '—' : (pct * 0.5).toFixed(2) + ' / 50') + '</span></div>';
+    }
+    function trackPaper75Parts(student, paperKey) {
+      if (!student || !Array.isArray(student.marks)) return null;
+      const idxs = [];
+      SYLLABUS.forEach((it, ix) => { if (it[0] === paperKey) idxs.push(ix); });
+      const ms = student.marks.filter(m => idxs.includes(m.chapterId));
+      const mq = ms.filter(m => m.qType === 'mcq');
+      const qs = ms.filter(m => m.qType === 'cq');
+      if (mq.length === 0 && qs.length === 0) return null;
+      const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+      return { m25: mq.length ? avg(mq.map(m => m.score100 || 0)) * 0.25 : 0, c50: qs.length ? avg(qs.map(m => m.score100 || 0)) * 0.50 : 0 };
+    }
+    function trackPaper75(student, paperKey) {
+      const p = (typeof trackPaper75Parts === 'function') ? trackPaper75Parts(student, paperKey) : null;
+      return p ? (p.m25 + p.c50) : null;
     }
 
     function updateChapterLivePreview() {
@@ -3444,6 +3665,10 @@
       document.getElementById('entry-chapter-title').textContent = chapterName;
       document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
       document.getElementById('entry-total').value = '25';
+      const cqT = document.getElementById('entry-cq-total'); if (cqT) cqT.value = '50';
+      const cqG = document.getElementById('entry-cq-got'); if (cqG) cqG.value = '';
+      entryQType = 'mcq';
+      if (typeof updateEntryTypeUI === 'function') updateEntryTypeUI();
       document.getElementById('entry-correct').value = '';
       document.getElementById('entry-wrong').value = '';
       document.getElementById('entry-skipped').value = '25';
@@ -3475,6 +3700,35 @@
       const mistakeCategory = document.getElementById('entry-mistake-category').value || null;
       const note = document.getElementById('entry-note').value.trim();
       const errEl = document.getElementById('entry-error');
+      if (typeof isTrackBased === 'function' && isTrackBased()) {
+        if (entryQType === 'cq') {
+          const ct = parseFloat(document.getElementById('entry-cq-total').value);
+          const cg = parseFloat(document.getElementById('entry-cq-got').value);
+          if (isNaN(ct) || ct <= 0) { if (errEl) errEl.textContent = 'পূর্ণমান অবশ্যই 1 বা তার বেশি হতে হবে'; return; }
+          if (isNaN(cg) || cg < 0 || cg > ct) { if (errEl) errEl.textContent = 'অর্জিত মান ভুল — মিলিয়ে দাও'; return; }
+          if (!Array.isArray(student.marks)) student.marks = [];
+          const pctCq = Math.round((cg / ct) * 10000) / 100;
+          student.marks.push({ chapterId: selectedChapterIdx, date, qType: 'cq', totalMarks: ct, obtainedMarks: cg, score100: pctCq, mistakeCategory: mistakeCategory, note: note });
+          await db_saveStudent(student);
+          closeChapterModal();
+          showToast('✓ সৃজনশীল এন্ট্রি সেভ হয়েছে', 2500, 'ok');
+          if (typeof renderPaperChapters === 'function' && typeof selectedPaperId !== 'undefined' && selectedPaperId) renderPaperChapters(selectedPaperId);
+          return;
+        }
+        if (isNaN(total) || total <= 0 || isNaN(correct) || correct < 0 || isNaN(wrong) || wrong < 0 || correct + wrong > total) {
+          if (errEl) errEl.textContent = 'সংখ্যা ভুল — মোট মিলছে না';
+          return;
+        }
+        if (!Array.isArray(student.marks)) student.marks = [];
+        const skipAuto = Math.max(0, total - correct - wrong);
+        const pctMcq = Math.round((correct / total) * 10000) / 100;
+        student.marks.push({ chapterId: selectedChapterIdx, date, qType: 'mcq', total, correct, wrong, skipped: skipAuto, score100: pctMcq, mistakeCategory: mistakeCategory, note: note });
+        await db_saveStudent(student);
+        closeChapterModal();
+        showToast('✓ বহুনির্বাচনি এন্ট্রি সেভ হয়েছে', 2500, 'ok');
+        if (typeof renderPaperChapters === 'function' && typeof selectedPaperId !== 'undefined' && selectedPaperId) renderPaperChapters(selectedPaperId);
+        return;
+      }
 
       if (isNaN(total) || total <= 0) {
         if (errEl) errEl.textContent = 'মোট প্রশ্ন সংখ্যা অবশ্যই 1 বা তার বেশি হতে হবে';
@@ -3741,6 +3995,8 @@
       document.getElementById('set-ssc').value = student.ssc || '5.00';
       document.getElementById('set-hsc').value = student.hsc || '5.00';
       document.getElementById('set-timer').value = student.isSecondTimer ? 'true' : 'false';
+      const trackSel = document.getElementById('set-track');
+      if (trackSel) trackSel.value = (student.track && TRACKS[student.track]) ? student.track : 'medical';
 
       const scaleToggle = document.getElementById('set-use-200-scale');
       if (scaleToggle) {
@@ -3774,6 +4030,20 @@
       `).join('');
     }
 
+    async function deleteMyAccount() {
+      const student = getCurrentStudent();
+      if (!student) return;
+      const n = (student.marks || []).length;
+      const c1 = confirm('⚠️ সতর্কতা! পুরো অ্যাকাউন্ট ডিলিট হবে।\n\nনাম: ' + (student.name || '') + '\nপরীক্ষার রেকর্ড: ' + n + 'টি\n\nক্লাউডসহ সব চিরতরে মুছে যাবে — ফেরানো যাবে না!\n\nডিলিট করবে?');
+      if (!c1) return;
+      const c2 = confirm('শেষ বার — ফাইনালি ডিলিট?\nOK মানে চিরতরে শেষ।');
+      if (!c2) return;
+      await db_deleteStudent(student.id);
+      try { if (typeof window.MTDeleteAuthUser === 'function') await window.MTDeleteAuthUser(); } catch (e) {}
+      showToast('অ্যাকাউন্ট সম্পূর্ণ ডিলিট হয়েছে — বিদায়!', 4000, 'ok');
+      await logout();
+    }
+
     async function handleUpdateProfile(e) {
       e.preventDefault();
       const student = getCurrentStudent();
@@ -3783,6 +4053,8 @@
       student.ssc = parseFloat(document.getElementById('set-ssc').value).toFixed(2);
       student.hsc = parseFloat(document.getElementById('set-hsc').value).toFixed(2);
       student.isSecondTimer = document.getElementById('set-timer').value === 'true';
+      const trackSel2 = document.getElementById('set-track');
+      if (trackSel2 && TRACKS[trackSel2.value]) { student.track = trackSel2.value; currentTrack = trackSel2.value; }
 
       const scaleToggle = document.getElementById('set-use-200-scale');
       if (scaleToggle) {
@@ -4851,9 +5123,70 @@
     }
 
     // ── Realtime lifecycle ───────────────────────────────────────────────────
+    function setTrackLiveMode(m) { window.__mtLiveMode = m; const st = getCurrentStudent(); if (st) renderTrackLive(st); }
+    function renderTrackLive(student) {
+      const view = document.getElementById('view-live');
+      if (!view) return;
+      const kids = Array.from(view.children);
+      if (!window.__mtLiveHost) {
+        window.__mtLiveHost = document.createElement('div');
+        if (kids[0] && kids[0].nextSibling) view.insertBefore(window.__mtLiveHost, kids[0].nextSibling);
+        else view.appendChild(window.__mtLiveHost);
+        kids.forEach((ch, i2) => { if (i2 !== 0) ch.style.display = 'none'; });
+      }
+      const mode = window.__mtLiveMode || 'comb';
+      const max = mode === 'mcq' ? 25 : mode === 'cq' ? 50 : 75;
+      const all = (student && Array.isArray(student.marks)) ? student.marks.filter(m => m.qType === 'mcq' || m.qType === 'cq') : [];
+      const ms = all.filter(m => mode === 'comb' ? true : m.qType === mode);
+      const w = m => (m.qType === 'mcq' ? (m.score100 || 0) * 0.25 : (m.score100 || 0) * 0.50);
+      const sorted = ms.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      const vals = sorted.map(w);
+      const trk = (typeof resolveTrack === 'function') ? resolveTrack() : 'medical';
+      const tName = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].name : '';
+      const btn = (m, label) => '<button type="button" class="btn btn-secondary" style="flex:1;' + (mode === m ? ' background: var(--accent); color:#fff; border-color: var(--accent);' : '') + '" onclick="setTrackLiveMode(\'' + m + '\')">' + label + '</button>';
+      const modeBtns = '<div style="display:flex; gap:8px; margin-bottom:14px;">' + btn('mcq', '📄 বহুনির্বাচনি (সর্বোচ্চ 25)') + btn('cq', '✍️ সৃজনশীল (সর্বোচ্চ 50)') + btn('comb', '🧮 সম্মিলিত (সর্বোচ্চ 75)') + '</div>';
+      if (window.__tLive1) { try { window.__tLive1.destroy(); } catch (e) {} window.__tLive1 = null; }
+      if (window.__tLive2) { try { window.__tLive2.destroy(); } catch (e) {} window.__tLive2 = null; }
+      if (vals.length === 0) {
+        window.__mtLiveHost.innerHTML = '<div class="card" style="margin-bottom:16px;"><div class="card-title">📈 ' + tName + ' লাইভ প্রোগ্রেস</div>' + modeBtns + '<div style="color:var(--text-dim); font-size:13px; padding:14px 0;">এই ধরনের কোনো এন্ট্রি নেই — অন্য মোড দেখো বা নতুন এন্ট্রি দাও।</div></div>';
+        return;
+      }
+      const latest = vals[vals.length - 1];
+      const last5 = vals.slice(-5);
+      const avg5 = last5.reduce((a, b) => a + b, 0) / last5.length;
+      const best = Math.max(...vals);
+      const kpi = (t, sub) => '<div style="flex:1; min-width:120px; background: var(--card-elevated); border:1px solid var(--border); border-radius: var(--radius-sm); padding:12px; text-align:center;"><div style="font-size:22px; font-weight:800; color:var(--accent);">' + t + '</div><div style="font-size:11px; color:var(--text-muted);">' + sub + '</div></div>';
+      let html = '<div class="card" style="margin-bottom:16px;"><div class="card-title">📈 ' + tName + ' লাইভ প্রোগ্রেস</div>' + modeBtns;
+      html += '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">' + kpi(latest.toFixed(1) + ' / ' + max, 'সর্বশেষ স্কোর') + kpi(avg5.toFixed(1) + ' / ' + max, 'গড় (শেষ 5টি)') + kpi(best.toFixed(1) + ' / ' + max, 'সর্বোচ্চ') + kpi(String(sorted.length), 'মোট এন্ট্রি') + '</div>';
+      html += '<div class="chart-box" style="margin-bottom:14px;"><canvas id="t-live-trend" height="240"></canvas></div>';
+      html += '<div class="chart-box"><canvas id="t-live-subjects" height="220"></canvas></div></div>';
+      window.__mtLiveHost.innerHTML = html;
+      const labels = sorted.map(m => (m.date || '') + (m.qType === 'mcq' ? ' 📄' : ' ✍️'));
+      const c1 = document.getElementById('t-live-trend');
+      if (c1 && typeof Chart !== 'undefined') window.__tLive1 = new Chart(c1, { type: 'line', data: { labels: labels, datasets: [{ label: 'স্কোর', data: vals, borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,.15)', fill: true, tension: 0.3, pointRadius: 3 }] }, options: { scales: { y: { min: 0, max: max } }, plugins: { legend: { display: false } } } });
+      const papers = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].papers : [];
+      const pl = [], pd = [];
+      papers.forEach(pk => {
+        const p = (typeof trackPaper75Parts === 'function') ? trackPaper75Parts(student, pk) : null;
+        if (!p) return;
+        const nm = (typeof PAPERS !== 'undefined' && PAPERS[pk]) ? PAPERS[pk].name : pk;
+        const v = mode === 'mcq' ? p.m25 : mode === 'cq' ? p.c50 : (p.m25 + p.c50);
+        pl.push(nm); pd.push(Math.round(v * 100) / 100);
+      });
+      const c2 = document.getElementById('t-live-subjects');
+      if (c2 && typeof Chart !== 'undefined' && pl.length) window.__tLive2 = new Chart(c2, { type: 'bar', data: { labels: pl, datasets: [{ label: 'পত্র অনুযায়ী স্কোর', data: pd, backgroundColor: 'rgba(129,140,248,.7)' }] }, options: { scales: { y: { min: 0, max: max } }, plugins: { legend: { display: false } } } });
+    }
     function renderLiveProgress() {
       const student = liveStudent();
       if (!student) return;
+      if (typeof isTrackBased === 'function' && isTrackBased()) {
+        if (typeof renderTrackLive === 'function') { renderTrackLive(student); return; }
+      } else if (window.__mtLiveHost && window.__mtLiveHost.parentElement) {
+        const __v = document.getElementById('view-live');
+        if (__v) Array.from(__v.children).forEach(__ch => { if (__ch !== window.__mtLiveHost) __ch.style.display = ''; });
+        window.__mtLiveHost.remove();
+        window.__mtLiveHost = null;
+      }
       const hasData = renderLiveKpis(student);
       if (hasData) {
         renderLiveTrend(student);
@@ -4925,6 +5258,7 @@
     let coachDonutChart = null;
 
     function renderExamCoach(student) {
+      if (typeof isTrackBased === 'function' && isTrackBased()) return;
       const cv = document.getElementById('coach-donut');
       if (!cv || typeof Chart === 'undefined') return;
 
