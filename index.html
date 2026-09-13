@@ -5124,6 +5124,7 @@
 
     // ── Realtime lifecycle ───────────────────────────────────────────────────
     function setTrackLiveMode(m) { window.__mtLiveMode = m; const st = getCurrentStudent(); if (st) renderTrackLive(st); }
+    function setTrackLiveSub(s) { window.__mtLiveSub = s; const st = getCurrentStudent(); if (st) renderTrackLive(st); }
     function renderTrackLive(student) {
       const view = document.getElementById('view-live');
       if (!view) return;
@@ -5135,36 +5136,60 @@
         kids.forEach((ch, i2) => { if (i2 !== 0) ch.style.display = 'none'; });
       }
       const mode = window.__mtLiveMode || 'comb';
+      const sub = window.__mtLiveSub || 'all';
       const max = mode === 'mcq' ? 25 : mode === 'cq' ? 50 : 75;
+      const trk = (typeof resolveTrack === 'function') ? resolveTrack() : 'medical';
+      const tName = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].name : '';
+      const papersAll = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].papers : [];
+      const papers = sub === 'all' ? papersAll : papersAll.filter(pk => pk.startsWith(sub));
+      const paperSet = {};
+      papers.forEach(pk => paperSet[pk] = true);
       const all = (student && Array.isArray(student.marks)) ? student.marks.filter(m => m.qType === 'mcq' || m.qType === 'cq') : [];
-      const ms = all.filter(m => mode === 'comb' ? true : m.qType === mode);
+      const ms = all.filter(m => {
+        if (mode !== 'comb' && m.qType !== mode) return false;
+        if (sub === 'all') return true;
+        const chap = (typeof SYLLABUS !== 'undefined' && SYLLABUS[m.chapterId]) ? SYLLABUS[m.chapterId] : null;
+        return !!(chap && paperSet[chap[0]]);
+      });
       const w = m => (m.qType === 'mcq' ? (m.score100 || 0) * 0.25 : (m.score100 || 0) * 0.50);
       const sorted = ms.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
       const vals = sorted.map(w);
-      const trk = (typeof resolveTrack === 'function') ? resolveTrack() : 'medical';
-      const tName = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].name : '';
+      const chip = (s, label) => '<button type="button" class="btn btn-secondary" style="flex:1; min-width:86px;' + (sub === s ? ' background: var(--accent); color:#fff; border-color: var(--accent);' : '') + '" onclick="setTrackLiveSub(\'' + s + '\')">' + label + '</button>';
       const btn = (m, label) => '<button type="button" class="btn btn-secondary" style="flex:1;' + (mode === m ? ' background: var(--accent); color:#fff; border-color: var(--accent);' : '') + '" onclick="setTrackLiveMode(\'' + m + '\')">' + label + '</button>';
-      const modeBtns = '<div style="display:flex; gap:8px; margin-bottom:14px;">' + btn('mcq', '📄 বহুনির্বাচনি (সর্বোচ্চ 25)') + btn('cq', '✍️ সৃজনশীল (সর্বোচ্চ 50)') + btn('comb', '🧮 সম্মিলিত (সর্বোচ্চ 75)') + '</div>';
+      const modeBtns = '<div style="display:flex; gap:8px; margin-bottom:10px;">' + btn('mcq', '📄 বহুনির্বাচনি (25)') + btn('cq', '✍️ সৃজনশীল (50)') + btn('comb', '🧮 সম্মিলিত (75)') + '</div>';
+      const subBtns = '<div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">' + chip('all', 'সব বিষয়') + chip('phy', '⚛️ পদার্থ') + chip('chem', '🧪 রসায়ন') + chip('math', '📐 গণিত') + chip('bio', '🧬 জীববিজ্ঞান') + '</div>';
       if (window.__tLive1) { try { window.__tLive1.destroy(); } catch (e) {} window.__tLive1 = null; }
       if (window.__tLive2) { try { window.__tLive2.destroy(); } catch (e) {} window.__tLive2 = null; }
       if (vals.length === 0) {
-        window.__mtLiveHost.innerHTML = '<div class="card" style="margin-bottom:16px;"><div class="card-title">📈 ' + tName + ' লাইভ প্রোগ্রেস</div>' + modeBtns + '<div style="color:var(--text-dim); font-size:13px; padding:14px 0;">এই ধরনের কোনো এন্ট্রি নেই — অন্য মোড দেখো বা নতুন এন্ট্রি দাও।</div></div>';
+        window.__mtLiveHost.innerHTML = '<div class="card" style="margin-bottom:16px;"><div class="card-title">📈 ' + tName + ' লাইভ প্রোগ্রেস</div>' + modeBtns + subBtns + '<div style="color:var(--text-dim); font-size:13px; padding:14px 0;">এই ফিল্টারে কোনো এন্ট্রি নেই — অন্য বিষয়/মোড দেখো বা নতুন এন্ট্রি দাও।</div></div>';
         return;
       }
       const latest = vals[vals.length - 1];
+      const prev = vals.length > 1 ? vals[vals.length - 2] : null;
       const last5 = vals.slice(-5);
       const avg5 = last5.reduce((a, b) => a + b, 0) / last5.length;
       const best = Math.max(...vals);
-      const kpi = (t, sub) => '<div style="flex:1; min-width:120px; background: var(--card-elevated); border:1px solid var(--border); border-radius: var(--radius-sm); padding:12px; text-align:center;"><div style="font-size:22px; font-weight:800; color:var(--accent);">' + t + '</div><div style="font-size:11px; color:var(--text-muted);">' + sub + '</div></div>';
-      let html = '<div class="card" style="margin-bottom:16px;"><div class="card-title">📈 ' + tName + ' লাইভ প্রোগ্রেস</div>' + modeBtns;
-      html += '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">' + kpi(latest.toFixed(1) + ' / ' + max, 'সর্বশেষ স্কোর') + kpi(avg5.toFixed(1) + ' / ' + max, 'গড় (শেষ 5টি)') + kpi(best.toFixed(1) + ' / ' + max, 'সর্বোচ্চ') + kpi(String(sorted.length), 'মোট এন্ট্রি') + '</div>';
-      html += '<div class="chart-box" style="margin-bottom:14px;"><canvas id="t-live-trend" height="240"></canvas></div>';
-      html += '<div class="chart-box"><canvas id="t-live-subjects" height="220"></canvas></div></div>';
+      const goal = max * 0.8;
+      let deltaSub = 'সর্বশেষ';
+      let deltaCol = 'var(--text-muted)';
+      if (prev !== null) {
+        const d = latest - prev;
+        if (d > 0) { deltaSub = '▲ +' + d.toFixed(1) + ' আগের থেকে'; deltaCol = '#34d399'; }
+        else if (d < 0) { deltaSub = '▼ ' + d.toFixed(1) + ' আগের থেকে'; deltaCol = '#f87171'; }
+        else deltaSub = '= আগের মতোই';
+      }
+      const kpi = (t, s2, col) => '<div style="flex:1; min-width:130px; background: var(--card-elevated); border:1px solid var(--border); border-radius: var(--radius-sm); padding:12px; text-align:center;"><div style="font-size:22px; font-weight:800; color:' + (col || 'var(--accent)') + ';">' + t + '</div><div style="font-size:11px; color:' + (s2 === deltaSub ? deltaCol : 'var(--text-muted)') + ';">' + s2 + '</div></div>';
+      let html = '<div class="card" style="margin-bottom:16px;"><div class="card-title">📈 ' + tName + ' লাইভ প্রোগ্রেস</div>' + modeBtns + subBtns;
+      html += '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">' + kpi(latest.toFixed(1) + ' / ' + max, deltaSub) + kpi(avg5.toFixed(1) + ' / ' + max, 'গড় (শেষ 5)') + kpi(best.toFixed(1) + ' / ' + max, 'সর্বোচ্চ', '#34d399') + kpi(String(sorted.length), 'মোট এন্ট্রি') + '</div>';
+      html += '<div style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">স্কোর ট্রেন্ড — লাল ড্যাশ লাইন = লক্ষ্য (80%):</div>';
+      html += '<div style="position:relative; height:300px; width:100%;"><canvas id="t-live-trend"></canvas></div>';
+      html += '<div style="font-size:12px; color:var(--text-muted); margin:16px 0 6px 0;">পত্রপ্রতি বর্তমান স্কোর:</div>';
+      html += '<div style="position:relative; height:260px; width:100%;"><canvas id="t-live-subjects"></canvas></div>';
+      html += '</div>';
       window.__mtLiveHost.innerHTML = html;
       const labels = sorted.map(m => (m.date || '') + (m.qType === 'mcq' ? ' 📄' : ' ✍️'));
       const c1 = document.getElementById('t-live-trend');
-      if (c1 && typeof Chart !== 'undefined') window.__tLive1 = new Chart(c1, { type: 'line', data: { labels: labels, datasets: [{ label: 'স্কোর', data: vals, borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,.15)', fill: true, tension: 0.3, pointRadius: 3 }] }, options: { scales: { y: { min: 0, max: max } }, plugins: { legend: { display: false } } } });
-      const papers = (typeof TRACKS !== 'undefined' && TRACKS[trk]) ? TRACKS[trk].papers : [];
+      if (c1 && typeof Chart !== 'undefined') window.__tLive1 = new Chart(c1, { type: 'line', data: { labels: labels, datasets: [{ label: 'স্কোর', data: vals, borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,.15)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#818cf8' }, { label: 'লক্ষ্য', data: vals.map(() => goal), borderColor: '#f87171', borderDash: [6, 6], pointRadius: 0, fill: false }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: max } }, plugins: { legend: { display: false } } } });
       const pl = [], pd = [];
       papers.forEach(pk => {
         const p = (typeof trackPaper75Parts === 'function') ? trackPaper75Parts(student, pk) : null;
@@ -5174,7 +5199,7 @@
         pl.push(nm); pd.push(Math.round(v * 100) / 100);
       });
       const c2 = document.getElementById('t-live-subjects');
-      if (c2 && typeof Chart !== 'undefined' && pl.length) window.__tLive2 = new Chart(c2, { type: 'bar', data: { labels: pl, datasets: [{ label: 'পত্র অনুযায়ী স্কোর', data: pd, backgroundColor: 'rgba(129,140,248,.7)' }] }, options: { scales: { y: { min: 0, max: max } }, plugins: { legend: { display: false } } } });
+      if (c2 && typeof Chart !== 'undefined' && pl.length) window.__tLive2 = new Chart(c2, { type: 'bar', data: { labels: pl, datasets: [{ label: 'স্কোর', data: pd, backgroundColor: 'rgba(129,140,248,.75)', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: max } }, plugins: { legend: { display: false } } } });
     }
     function renderLiveProgress() {
       const student = liveStudent();
